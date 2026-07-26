@@ -101,6 +101,13 @@ namespace {
         }
     }
 
+    class SitRepLinkText;
+    std::shared_ptr<SitRepLinkText> last_clicked_link_text;
+    void MyHandleLinkClick(const std::string& link_type, const std::string& data, std::shared_ptr<SitRepLinkText> m_link_text) {
+	last_clicked_link_text = m_link_text;
+        HandleLinkClick(link_type, data);
+    }
+
     std::vector<std::string> OrderedSitrepTemplateStrings() {
         // determine sitrep order
         std::istringstream template_stream(UserString("FUNCTIONAL_SITREP_PRIORITY_ORDER"));
@@ -255,7 +262,8 @@ namespace {
             AttachChild(m_link_text);
 
             m_link_text->LinkClickedSignal.connect(
-                &HandleLinkClick);
+                // &HandleLinkClick);
+                boost::bind(&MyHandleLinkClick, _1, _2, m_link_text));
             m_link_text->LinkDoubleClickedSignal.connect(
                 &HandleLinkClick);
             m_link_text->LinkRightClickedSignal.connect(
@@ -268,6 +276,9 @@ namespace {
 
         void Render() override {
             GG::Clr background_clr = this->Disabled() ? ClientUI::WndColor() : ClientUI::CtrlColor();
+            if (m_link_text == last_clicked_link_text) {
+                background_clr = GG::CLR_DARK_BLUE;
+            }
             GG::Pt spacer = GG::Pt(GG::X(sitrep_edge_to_outline_spacing), GG::Y(sitrep_edge_to_outline_spacing));
             GG::FlatRectangle(UpperLeft() + spacer, LowerRight() - spacer,
                               background_clr, ClientUI::WndOuterBorderColor(), 1u);
