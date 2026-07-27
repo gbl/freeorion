@@ -1335,6 +1335,32 @@ float Fleet::Structure() const {
     return retval;
 }
 
+float Fleet::StructureRemainPercent() const {
+    if (m_ships.empty())
+        return 0.0f;
+
+    bool fleet_is_scrapped = true;
+    float remaining_structure = 0.0f;
+    float maximum_structure = 0.0f;
+    float retval;
+    for (int ship_id : m_ships) {
+        if (auto ship = GetShip(ship_id)) {
+            if (!ship->OrderedScrapped()) {
+                remaining_structure += ship->InitialMeterValue(METER_STRUCTURE);
+                maximum_structure += ship->InitialMeterValue(METER_MAX_STRUCTURE);
+                fleet_is_scrapped = false;
+            }
+        }
+    }
+
+    if (fleet_is_scrapped || maximum_structure == 0)
+        retval = 0.0f;
+    else
+	retval = remaining_structure / maximum_structure * 100;
+
+    return retval;
+}
+
 float Fleet::Shields() const {
     if (m_ships.empty())
         return 0.0f;

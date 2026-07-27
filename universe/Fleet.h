@@ -69,6 +69,7 @@ public:
     std::pair<int, int>                 ETA(const std::list<MovePathNode>& move_path) const;    ///< Returns the number of turns which must elapse before the fleet arrives at the final destination and next system in the spepcified \a move_path
     float                               Damage() const;                     ///< Returns total amount of damage this fleet has, which is the sum of the ships' damage
     float                               Structure() const;                  ///< Returns total amount of structure this fleet has, which is the sum of the ships' structure
+    float                               StructureRemainPercent() const;       ///< Returns percentage of lost structure (in battles or from mines)
     float                               Shields() const;                    ///< Returns total amount of shields this fleet has, which is the sum of the ships' shields
     float                               Fuel() const;                       ///< Returns effective amount of fuel this fleet has, which is the least of the amounts of fuel that the ships have
     float                               MaxFuel() const;                    ///< Returns effective maximum amount of fuel this fleet has, which is the least of the max amounts of fuel that the ships can have

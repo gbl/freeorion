@@ -1464,6 +1464,24 @@ void FleetDataPanel::Refresh() {
         int client_empire_id = HumanClientApp::GetApp()->EmpireID();
         // set fleet name and destination text
         std::string public_fleet_name = fleet->PublicName(client_empire_id);
+        int fleet_remaining_percent = (int) fleet->StructureRemainPercent();
+        std::string damage_color;
+        std::string damage_color_end = "</rgba>";
+        if (fleet_remaining_percent == 100) {
+            damage_color = "";
+            damage_color_end = "";
+        } else if (fleet_remaining_percent >= 80) {
+            damage_color = "<rgba 0 191 0 255>";
+        } else if (fleet_remaining_percent >= 50) {
+            damage_color = "<rgba 127 127 0 255>";
+        } else {
+            damage_color = "<rgba 255 0 0 255>";
+        }
+        // Colors don't work well with a background that can be white or
+        // black so don't use them until we find out how to do them
+        // right
+        damage_color = "";
+        damage_color_end = "";
         if (!fleet->Unowned() && public_fleet_name == UserString("FW_FOREIGN_FLEET")) {
             const Empire* ship_owner_empire = GetEmpire(fleet->Owner());
             const std::string& owner_name = (ship_owner_empire ? ship_owner_empire->Name() : UserString("FW_FOREIGN"));
@@ -1471,12 +1489,12 @@ void FleetDataPanel::Refresh() {
             if (GetOptionsDB().Get<bool>("ui.name.id.shown")) {
                 fleet_name = fleet_name + " (" + std::to_string(m_fleet_id) + ")";
             }
-            m_fleet_name_text->SetText(fleet_name);
+            m_fleet_name_text->SetText(fleet_name + " [" + damage_color + std::to_string(fleet_remaining_percent) + "%" + damage_color_end + "]");
         } else {
             if (GetOptionsDB().Get<bool>("ui.name.id.shown")) {
                 public_fleet_name = public_fleet_name + " (" + std::to_string(m_fleet_id) + ")";
             }
-            m_fleet_name_text->SetText(public_fleet_name);
+            m_fleet_name_text->SetText(public_fleet_name + " [" + damage_color + std::to_string(fleet_remaining_percent) + "%" + damage_color_end + "]");
         }
         m_fleet_destination_text->SetText(FleetDestinationText(m_fleet_id));
 
@@ -2327,9 +2345,15 @@ public:
             GetUniverse().EmpireStaleKnowledgeObjectIDs(this_client_empire_id);
 
         const std::set<int>& ship_ids = fleet->ShipIDs();
+        std::vector<int> ships_by_structure(ship_ids.begin(), ship_ids.end());
+        std::sort(ships_by_structure.begin(), ships_by_structure.end(), [] (int a, int b) {
+            auto ship_a = GetShip(a);
+            auto ship_b = GetShip(b);
+            return ship_a->InitialMeterValue(METER_STRUCTURE) < ship_b->InitialMeterValue(METER_STRUCTURE);
+        });
         std::vector<std::shared_ptr<GG::ListBox::Row>> rows;
         rows.reserve(ship_ids.size());
-        for (int ship_id : ship_ids) {
+        for (int ship_id : ships_by_structure) {
             // skip known destroyed and stale info objects
             if (this_client_known_destroyed_objects.count(ship_id))
                 continue;
