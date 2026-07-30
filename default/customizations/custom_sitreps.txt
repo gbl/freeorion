@@ -75,7 +75,15 @@ EffectsGroup
         Planet
         Planet Type = GasGiant
         Ownedby empire = Source.Owner
+        // need to check for enqueued and for finished building
+        // else we get a spurious message right after conversion
         Not Contains Building name = "BLD_GAS_GIANT_GEN"
+        Not Enqueued type = Building name = "BLD_ART_FACTORY_PLANET"
+        Not Enqueued type = Building name = "BLD_ART_PLANET"
+        Not Enqueued type = Building name = "BLD_ART_PARADISE_PLANET"
+        Not Contains Building name = "BLD_ART_FACTORY_PLANET"
+        Not Contains Building name = "BLD_ART_PLANET"
+        Not Contains Building name = "BLD_ART_PARADISE_PLANET"
         ContainedBy And [
             Contains And [
                 Planet 
