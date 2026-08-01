@@ -1513,7 +1513,15 @@ private:
 
         for (unsigned int i = 0; i < NUM_COLUMNS; ++i) {
             std::string col_val = m_column_val_cache[i];
+            bool grey = false;
+            if (!col_val.empty() && col_val.at(0) == '*') {
+                col_val = col_val.substr(1);
+                grey = true;
+            }
             auto control = GG::Wnd::Create<CUILabel>(col_val, GG::FORMAT_LEFT);
+            if (grey) {
+                control->SetTextColor(GG::Clr(192, 192, 192, 255));
+            }
             control->Resize(GG::Pt(GG::X(GetColumnWidth(i)), ClientHeight()));
             retval.push_back(control);
         }

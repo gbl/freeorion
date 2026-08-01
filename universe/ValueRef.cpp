@@ -1122,8 +1122,33 @@ std::string Variable<std::string>::Eval(const ScriptingContext& context) const
         return boost::lexical_cast<std::string>(object->ObjectType());
 
     } else if (property_name == "Species") {
-        if (auto planet = std::dynamic_pointer_cast<const Planet>(object))
-            return planet->SpeciesName();
+        if (auto planet = std::dynamic_pointer_cast<const Planet>(object)) {
+            std::string retval = planet->SpeciesName();
+            if (retval.empty()) {
+                // first, try to find a finished colony building, this is
+                // when the colony has been produced but not established.
+                auto ids = planet->ContainedObjectIDs();
+                for (auto id: ids) {
+                    auto building = GetBuilding(id);
+                    if (boost::algorithm::starts_with(building->BuildingTypeName(), "BLD_COL_")) {
+                        return std::string("*SP_" + building->BuildingTypeName().substr(8));
+                    }
+                }
+                // else try to find an unfinished colony building
+                int owner_empire_id = object->Owner();
+                if (Empire* empire = GetEmpire(owner_empire_id)) {
+                    for (const auto& elem : empire->GetProductionQueue()) {
+                        if (elem.location != object->ID())  continue;
+                        if (elem.item.build_type != BT_BUILDING) continue;
+                        if (boost::algorithm::starts_with(elem.item.name, "BLD_COL")) {
+                            return std::string("*SP_" + elem.item.name.substr(8));
+                        }
+                    }
+                }
+                return "";
+            }
+            return retval;
+        }
         else if (auto ship = std::dynamic_pointer_cast<const Ship>(object))
             return ship->SpeciesName();
 
@@ -2720,9 +2745,15 @@ std::string UserStringLookup<std::string>::Eval(const ScriptingContext& context)
     if (!m_value_ref)
         return "";
     std::string ref_val = m_value_ref->Eval(context);
+    bool starred = false;
+    if (!ref_val.empty() && ref_val.at(0) == '*') {
+        ref_val = ref_val.substr(1);
+        starred = true;
+    }
     if (ref_val.empty() || !UserStringExists(ref_val))
         return "";
-    return UserString(ref_val);
+    std::string user_string = UserString(ref_val);
+    return starred ? "*" + user_string : user_string;
 }
 
 template <>
