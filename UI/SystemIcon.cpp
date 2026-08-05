@@ -116,7 +116,9 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
     // loop through planets in system, checking if any are a homeworld, capital
     // or have a shipyard, or have neutral population
     bool capital = false, homeworld = false, has_shipyard = false, has_neutrals = false, has_player_planet = false;
+    bool has_neutronium = false, has_stargate = false;
 
+    std::set<std::string> shipyards;
     std::set<int> owner_empire_ids;
     auto system_planets = Objects().FindObjects<const Planet>(system->PlanetIDs());
 
@@ -149,18 +151,29 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
             }
         }
 
-        // does planet contain a shipyard?
-        if (!has_shipyard) {
-            for (auto& building : Objects().FindObjects<const Building>(planet->BuildingIDs())) {
-                int building_id = building->ID();
+        // does planet contain a shipyard, orbital drydock, energy compressor, 
+        // geo integration facility, nanorobotic processing unit, advanced
+        // engineering bay, neutronium forge, or stargate ?
+        for (auto& building : Objects().FindObjects<const Building>(planet->BuildingIDs())) {
+            int building_id = building->ID();
 
-                if (known_destroyed_object_ids.count(building_id))
-                    continue;
+            if (known_destroyed_object_ids.count(building_id))
+                continue;
 
-                if (building->HasTag(TAG_SHIPYARD)) {
-                    has_shipyard = true;
-                    break;
-                }
+            if (building->HasTag(TAG_SHIPYARD)) {
+                has_shipyard = true;
+            }
+            // Maybe it's a better idea to mark all buildings
+            // with tags instead if relying on the BLD_SHIPYARD name?
+            std::string type = building->BuildingTypeName();
+            if (type.substr(0, 12) == "BLD_SHIPYARD") {
+                shipyards.emplace(type);
+            }
+            if (type == "BLD_STARGATE" || type == "BLD_TRANSFORMER") {
+                has_stargate = true;
+            }
+            if (type.substr(0, 14) == "BLD_NEUTRONIUM") {
+                has_neutronium = true;
             }
         }
 
@@ -207,6 +220,17 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
     if (GetOptionsDB().Get<bool>("ui.name.id.shown")) {
         wrapped_system_name = wrapped_system_name + " (" + std::to_string(system_id) + ")";
     }
+    wrapped_system_name += "<rgba 255 240 255 255>";
+    if (shipyards.size() >= 2) {
+        wrapped_system_name = wrapped_system_name + "<sub>"+std::to_string(shipyards.size())+"</sub>";
+    }
+    if (has_neutronium) {
+        wrapped_system_name = wrapped_system_name + u8"\u0394";   // delta
+    }
+    if (has_stargate) {
+        wrapped_system_name = wrapped_system_name + u8"\u03a0";   // pi
+    }
+    wrapped_system_name += "</rgba>";
 
     m_text = GG::Wnd::Create<GG::TextControl>(
         GG::X0, GG::Y0, GG::X1, GG::Y1,
