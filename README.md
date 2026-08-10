@@ -1,3 +1,25 @@
+# About this repo
+
+This is my personal repo of changes from the 0.4.8 version. I personally like this one better than
+newer versions, but I have some ideas of improving the UI that I created here. This repo is mainly
+for backups, I'm not accepting push requests or anything. 
+
+The official FreeOrion has my explicit permission to incorporate or replicate these patches into the
+official fork.
+
+Changes are:
+
+- Clicking a link in a SitRep highlights this SitRep, so if you click around for a while you know
+where you were.
+- In the fleet window, fleets show a health percentage, and ships are sorted by their remaining health.
+So you can split heavily damaged ships easily while leaving lightly damaged ones in the original fleet.
+- If a Gas Giant is being turned into an artificial planet, don't show Gas Giant Generator hints there.
+- In the objects list, a planet that is just building a colony has that species name shown in grey.
+- The dark red empire color has been turned into a lighter red-orange one to improve readability.
+- Show the number of shipyard-like expansions on the map window, and also show if a planet has a portal or
+anything with neutronium, so it's easier to find those. (Not really happy with this yet)
+- A new specials window shows where growth specials are, and which of them are in use (by you).
+
 # FreeOrion
 
 FreeOrion is a free, Open Source, turn-based space empire and galactic conquest
