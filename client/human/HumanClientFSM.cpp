@@ -12,6 +12,7 @@
 #include "../../util/OptionsDB.h"
 #include "../../UI/ChatWnd.h"
 #include "../../UI/PlayerListWnd.h"
+#include "../../UI/SpecialsListWnd.h"
 #include "../../UI/IntroScreen.h"
 #include "../../UI/MultiplayerLobbyWnd.h"
 #include "../../UI/PasswordEnterWnd.h"
@@ -777,6 +778,7 @@ WaitingForGameStart::WaitingForGameStart(my_context ctx) :
 
     Client().Register(Client().GetClientUI().GetMessageWnd());
     Client().Register(Client().GetClientUI().GetPlayerListWnd());
+    Client().Register(Client().GetClientUI().GetSpecialsListWnd());
 
     Client().GetClientUI().GetMapWnd()->EnableOrderIssuing(false);
 }
@@ -915,6 +917,9 @@ PlayingTurn::PlayingTurn(my_context ctx) :
     Client().GetClientUI().GetPlayerListWnd()->Refresh();
     Client().GetClientUI().GetPlayerListWnd()->HandlePlayerStatusUpdate(Message::PLAYING_TURN, Client().PlayerID());
 
+    Client().GetClientUI().GetSpecialsListWnd()->Refresh();
+    Client().GetClientUI().GetSpecialsListWnd()->HandlePlayerStatusUpdate(Message::PLAYING_TURN, Client().PlayerID());
+
     if (Client().GetApp()->GetClientType() != Networking::CLIENT_TYPE_HUMAN_OBSERVER)
         Client().GetClientUI().GetMapWnd()->EnableOrderIssuing(true);
 
@@ -1011,6 +1016,7 @@ boost::statechart::result PlayingTurn::react(const PlayerStatus& msg) {
     Client().SetPlayerStatus(about_player_id, status);
     Client().GetClientUI().GetMessageWnd()->HandlePlayerStatusUpdate(status, about_player_id);
     Client().GetClientUI().GetPlayerListWnd()->HandlePlayerStatusUpdate(status, about_player_id);
+    Client().GetClientUI().GetSpecialsListWnd()->HandlePlayerStatusUpdate(status, about_player_id);
 
     if (Client().GetApp()->GetClientType() == Networking::CLIENT_TYPE_HUMAN_MODERATOR &&
         Client().GetClientUI().GetMapWnd()->AutoEndTurnEnabled())

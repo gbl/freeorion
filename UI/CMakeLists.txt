@@ -55,6 +55,7 @@ target_sources(freeorion
         ${CMAKE_CURRENT_LIST_DIR}/SidePanel.h
         ${CMAKE_CURRENT_LIST_DIR}/SitRepPanel.h
         ${CMAKE_CURRENT_LIST_DIR}/Sound.h
+        ${CMAKE_CURRENT_LIST_DIR}/SpecialsListWnd.h
         ${CMAKE_CURRENT_LIST_DIR}/SpecialsPanel.h
         ${CMAKE_CURRENT_LIST_DIR}/SystemIcon.h
         ${CMAKE_CURRENT_LIST_DIR}/SystemResourceSummaryBrowseWnd.h
@@ -114,6 +115,7 @@ target_sources(freeorion
         ${CMAKE_CURRENT_LIST_DIR}/SidePanel.cpp
         ${CMAKE_CURRENT_LIST_DIR}/SitRepPanel.cpp
         ${CMAKE_CURRENT_LIST_DIR}/Sound.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/SpecialsListWnd.cpp
         ${CMAKE_CURRENT_LIST_DIR}/SpecialsPanel.cpp
         ${CMAKE_CURRENT_LIST_DIR}/SystemIcon.cpp
         ${CMAKE_CURRENT_LIST_DIR}/SystemResourceSummaryBrowseWnd.cpp

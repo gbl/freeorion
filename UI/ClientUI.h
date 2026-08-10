@@ -20,6 +20,7 @@ class IntroScreen;
 class MapWnd;
 class MessageWnd;
 class PlayerListWnd;
+class SpecialsListWnd;
 class MultiPlayerLobbyWnd;
 class PasswordEnterWnd;
 struct SaveGameUIData;
@@ -42,6 +43,7 @@ public:
     MapWnd const*                           GetMapWndConst() const;     //!< Returns the main map window.
     std::shared_ptr<MessageWnd>             GetMessageWnd();            //!< Returns the chat / message window.
     std::shared_ptr<PlayerListWnd>          GetPlayerListWnd();         //!< Returns the players list window.
+    std::shared_ptr<SpecialsListWnd>        GetSpecialsListWnd();       //!< Returns the players list window.
     std::shared_ptr<IntroScreen>            GetIntroScreen();           //!< Returns the intro screen / splash window.
     std::shared_ptr<MultiPlayerLobbyWnd>    GetMultiPlayerLobbyWnd();   //!< Returns the multiplayer lobby window.
     std::shared_ptr<PasswordEnterWnd>       GetPasswordEnterWnd();      //!< Returns the authentication window.
@@ -227,6 +229,7 @@ private:
     mutable std::shared_ptr<MapWnd>         m_map_wnd;              //!< the galaxy map
     std::shared_ptr<MessageWnd>             m_message_wnd;          //!< the messages / chat display
     std::shared_ptr<PlayerListWnd>          m_player_list_wnd;      //!< the players list
+    std::shared_ptr<SpecialsListWnd>        m_specials_list_wnd;    //!< the specials info
     std::shared_ptr<IntroScreen>            m_intro_screen;         //!< splash screen / main menu when starting program
     std::shared_ptr<MultiPlayerLobbyWnd>    m_multiplayer_lobby_wnd;//!< the multiplayer lobby
     std::shared_ptr<SaveFileDialog>         m_savefile_dialog = nullptr;

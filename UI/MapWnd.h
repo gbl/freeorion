@@ -401,6 +401,10 @@ private:
     void ShowEmpires();
     void HideEmpires();
 
+    bool ToggleSpecials();
+    void ShowSpecials();
+    void HideSpecials();
+
     bool ToggleObjects();
     void ShowObjects();
     void HideObjects();
@@ -574,6 +578,7 @@ private:
     std::shared_ptr<GG::Button>     m_industry_wasted = nullptr, m_research_wasted = nullptr,
                                     m_btn_moderator = nullptr, m_btn_messages = nullptr, m_btn_empires = nullptr,
                                     m_btn_siterep = nullptr, m_btn_research = nullptr, m_btn_production = nullptr,
+                                    m_btn_specials = nullptr,
                                     m_btn_design = nullptr, m_btn_pedia = nullptr, m_btn_graphs = nullptr,
                                     m_btn_objects = nullptr, m_btn_menu = nullptr;
     std::shared_ptr<GG::Label>      m_FPS = nullptr;

@@ -3135,6 +3135,12 @@ MAP_BTN_DESIGN
 Design
 
 MAP_BTN_DESIGN_DESC
+Show growth specials and comp. moon
+
+MAP_BTN_SPECIALS
+Specials
+
+MAP_BTN_SPECIALS_DESC
 ''''''
 
 MAP_BTN_GRAPH
@@ -6020,6 +6026,9 @@ Messages
 
 PLAYERS_LIST_PANEL_TITLE
 Empires
+
+SPECIALS_LIST_PANEL_TITLE
+Specials
 
 PLAYING_TURN
 Playing

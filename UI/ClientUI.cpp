@@ -7,6 +7,7 @@
 #include "DesignWnd.h"
 #include "ChatWnd.h"
 #include "PlayerListWnd.h"
+#include "SpecialsListWnd.h"
 #include "MultiplayerLobbyWnd.h"
 #include "PasswordEnterWnd.h"
 #include "Sound.h"
@@ -578,9 +579,11 @@ namespace {
     const GG::Y PANEL_HEIGHT(160); // Also formerly "UI.chat-panel-height" default
     const GG::X MESSAGE_PANEL_WIDTH(345); // Formerly "UI.chat-panel-width" default
     const GG::X PLAYER_LIST_PANEL_WIDTH(445);
+    const GG::X SPECIALS_LIST_PANEL_WIDTH(445);
 
     const std::string MESSAGE_WND_NAME = "map.messages";
     const std::string PLAYER_LIST_WND_NAME = "map.empires";
+    const std::string SPECIALS_LIST_WND_NAME = "map.specials";
 
     template <class OptionType, class PredicateType>
     void ConditionalForward(const std::string& option_name,
@@ -612,6 +615,7 @@ ClientUI::ClientUI() :
     m_map_wnd(nullptr),
     m_message_wnd(nullptr),
     m_player_list_wnd(nullptr),
+    m_specials_list_wnd(nullptr),
     m_intro_screen(nullptr),
     m_multiplayer_lobby_wnd(nullptr),
     m_password_enter_wnd(nullptr),
@@ -627,6 +631,7 @@ ClientUI::ClientUI() :
     m_message_wnd = GG::Wnd::Create<MessageWnd>(GG::INTERACTIVE | GG::DRAGABLE | GG::ONTOP | GG::RESIZABLE |
                                                 CLOSABLE | PINABLE, MESSAGE_WND_NAME);
     m_player_list_wnd = GG::Wnd::Create<PlayerListWnd>(PLAYER_LIST_WND_NAME);
+    m_specials_list_wnd = GG::Wnd::Create<SpecialsListWnd>(SPECIALS_LIST_WND_NAME);
     InitializeWindows();
 
     m_intro_screen = GG::Wnd::Create<IntroScreen>();
@@ -681,6 +686,13 @@ std::shared_ptr<MessageWnd> ClientUI::GetMessageWnd()
 
 std::shared_ptr<PlayerListWnd> ClientUI::GetPlayerListWnd()
 { return m_player_list_wnd; }
+
+std::shared_ptr<SpecialsListWnd> ClientUI::GetSpecialsListWnd()
+{
+    fprintf(stderr, "specials list is %p\n", m_specials_list_wnd.get());
+    fflush(stderr);
+    return m_specials_list_wnd;
+}
 
 std::shared_ptr<IntroScreen> ClientUI::GetIntroScreen()
 { return m_intro_screen; }
@@ -986,8 +998,12 @@ void ClientUI::InitializeWindows() {
     const GG::Pt player_list_ul(MESSAGE_PANEL_WIDTH, GG::GUI::GetGUI()->AppHeight() - PANEL_HEIGHT);
     const GG::Pt player_list_wh(PLAYER_LIST_PANEL_WIDTH, PANEL_HEIGHT);
 
+    const GG::Pt specials_list_ul(MESSAGE_PANEL_WIDTH+PLAYER_LIST_PANEL_WIDTH, GG::GUI::GetGUI()->AppHeight() - PANEL_HEIGHT);
+    const GG::Pt specials_list_wh(SPECIALS_LIST_PANEL_WIDTH, PANEL_HEIGHT);
+
     m_message_wnd->    InitSizeMove(message_ul,     message_ul + message_wh);
     m_player_list_wnd->InitSizeMove(player_list_ul, player_list_ul + player_list_wh);
+    m_specials_list_wnd->InitSizeMove(specials_list_ul, specials_list_ul + specials_list_wh);
 }
 
 void ClientUI::HandleSizeChange(bool fullscreen) const {

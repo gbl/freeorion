@@ -4,6 +4,7 @@
 #include "ResourceBrowseWnd.h"
 #include "ChatWnd.h"
 #include "PlayerListWnd.h"
+#include "SpecialsListWnd.h"
 #include "ClientUI.h"
 #include "CUIControls.h"
 #include "CUIDrawUtil.h"
@@ -1030,7 +1031,7 @@ void MapWnd::CompleteConstruction() {
 
     auto layout = GG::Wnd::Create<GG::Layout>(m_toolbar->ClientUpperLeft().x, m_toolbar->ClientUpperLeft().y,
                                               m_toolbar->ClientWidth(),       m_toolbar->ClientHeight(),
-                                              1, 22);
+                                              1, 23);
     layout->SetName("Toolbar Layout");
     m_toolbar->SetLayout(layout);
 
@@ -1137,6 +1138,23 @@ void MapWnd::CompleteConstruction() {
     m_btn_design->SetBrowseModeTime(GetOptionsDB().Get<int>("ui.tooltip.delay"));
     m_btn_design->SetBrowseInfoWnd(GG::Wnd::Create<TextBrowseWnd>(
         UserString("MAP_BTN_DESIGN"), UserString("MAP_BTN_DESIGN_DESC")));
+
+    in_window_func =
+        boost::bind(&InRect, boost::bind(&WndLeft, _1),   boost::bind(&WndTop, m_toolbar.get()),
+                             boost::bind(&WndRight, _1),  boost::bind(&WndBottom, _1),
+                    _2);
+    // Specials button
+    m_btn_specials = Wnd::Create<SettableInWindowCUIButton>(
+        GG::SubTexture(ClientUI::GetTexture(button_texture_dir / "specials.png")),
+        GG::SubTexture(ClientUI::GetTexture(button_texture_dir / "specials_clicked.png")),
+        GG::SubTexture(ClientUI::GetTexture(button_texture_dir / "specials_mouseover.png")),
+        in_window_func);
+    m_btn_specials->SetMinSize(GG::Pt(GG::X(32), GG::Y(32)));
+    m_btn_specials->LeftClickedSignal.connect(
+        boost::bind(&MapWnd::ToggleSpecials, this));
+    m_btn_specials->SetBrowseModeTime(GetOptionsDB().Get<int>("ui.tooltip.delay"));
+    m_btn_specials->SetBrowseInfoWnd(GG::Wnd::Create<TextBrowseWnd>(
+        UserString("MAP_BTN_SPECIALS"), UserString("MAP_BTN_SPECIALS_DESC")));
 
     in_window_func =
         boost::bind(&InRect, boost::bind(&WndLeft, _1),   boost::bind(&WndTop, m_toolbar.get()),
@@ -1417,6 +1435,11 @@ void MapWnd::CompleteConstruction() {
     layout->Add(m_btn_production,   0, layout_column, GG::ALIGN_CENTER | GG::ALIGN_VCENTER);
     ++layout_column;
 
+    layout->SetMinimumColumnWidth(layout_column, m_btn_specials->Width());
+    layout->SetColumnStretch(layout_column, 0.0);
+    layout->Add(m_btn_specials,     0, layout_column, GG::ALIGN_CENTER | GG::ALIGN_VCENTER);
+    ++layout_column;
+
     layout->SetMinimumColumnWidth(layout_column, m_btn_design->Width());
     layout->SetColumnStretch(layout_column, 0.0);
     layout->Add(m_btn_design,       0, layout_column, GG::ALIGN_CENTER | GG::ALIGN_VCENTER);
@@ -1569,6 +1592,16 @@ void MapWnd::CompleteConstruction() {
                 m_btn_empires->SetRolloverGraphic (GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "empires.png")));
             }
         }
+        if (const auto& spc_wnd = cui->GetSpecialsListWnd()) {
+            // Wnd is manually closed by user
+            spc_wnd->ClosingSignal.connect(
+                boost::bind(&MapWnd::HideSpecials, this));
+            if (spc_wnd->Visible()) {
+                PushWndStack(spc_wnd);
+                m_btn_specials->SetUnpressedGraphic(GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials_mouseover.png")));
+                m_btn_specials->SetRolloverGraphic (GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials.png")));
+            }
+        }
     }
 
     HumanClientApp::GetApp()->RepositionWindowsSignal.connect(
@@ -1634,6 +1667,8 @@ void MapWnd::DoLayout() {
             msg_wnd->ValidatePosition();
         if (const auto& plr_wnd = cui->GetPlayerListWnd())
             plr_wnd->ValidatePosition();
+        if (const auto& spc_wnd = cui->GetSpecialsListWnd())
+            spc_wnd->ValidatePosition();
     }
 
     FleetUIManager::GetFleetUIManager().CullEmptyWnds();
@@ -6011,6 +6046,8 @@ void MapWnd::Sanitize() {
         //    msg_wnd->Clear();
         if (const auto& plr_wnd = cui->GetPlayerListWnd())
             plr_wnd->Clear();
+        if (const auto& spc_wnd = cui->GetSpecialsListWnd())
+            spc_wnd->Clear();
     }
 
     MoveTo(GG::Pt(-AppWidth(), -AppHeight()));
@@ -6113,6 +6150,8 @@ bool MapWnd::ReturnToMap() {
         FleetUIManager::GetFleetUIManager().CloseAll();
     } else if (cui && wnd == cui->GetPlayerListWnd()) {
         HideEmpires();
+    } else if (cui && wnd == cui->GetSpecialsListWnd()) {
+        HideSpecials();
     } else if (cui && wnd == cui->GetMessageWnd()) {
         HideMessages();
     } else {
@@ -6358,6 +6397,57 @@ bool MapWnd::ToggleEmpires() {
     return true;
 }
 
+void MapWnd::ShowSpecials() {
+    std::cerr << "ShowSpecials" << std::endl;
+    // hide other "competing" windows
+    HideResearch();
+    HideProduction();
+    HideDesign();
+
+    ClientUI* cui = ClientUI::GetClientUI();
+    if (!cui)
+        return;
+    const auto& spec_wnd = cui->GetSpecialsListWnd();
+    if (!spec_wnd)
+        return;
+    GG::GUI* gui = GG::GUI::GetGUI();
+    if (!gui)
+        return;
+    fprintf(stderr, "Calling show on %p\n", spec_wnd.get());
+    spec_wnd->Show();
+    gui->MoveUp(spec_wnd);
+    PushWndStack(spec_wnd);
+
+    // indicate selection on button
+    m_btn_specials->SetUnpressedGraphic(GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials_mouseover.png")));
+    m_btn_specials->SetRolloverGraphic (GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials.png")));
+}
+
+void MapWnd::HideSpecials() {
+    std::cerr << "HideSpecials" << std::endl;
+    if (ClientUI* cui = ClientUI::GetClientUI()) {
+        cui->GetSpecialsListWnd()->Hide();
+        RemoveFromWndStack(cui->GetSpecialsListWnd());
+    }
+    m_btn_specials->SetUnpressedGraphic(GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials.png")));
+    m_btn_specials->SetRolloverGraphic (GG::SubTexture(ClientUI::GetTexture(ClientUI::ArtDir() / "icons" / "buttons" / "specials_mouseover.png")));
+}
+
+bool MapWnd::ToggleSpecials() {
+    ClientUI* cui = ClientUI::GetClientUI();
+    if (!cui)
+        return false;
+    const auto& spec_wnd = cui->GetSpecialsListWnd();
+    if (!spec_wnd)
+        return false;
+    if (!spec_wnd->Visible() || m_production_wnd->Visible() || m_research_wnd->Visible() || m_design_wnd->Visible()) {
+        ShowSpecials();
+    } else {
+        HideSpecials();
+    }
+    return true;
+}
+
 void MapWnd::ShowPedia() {
     // if production screen is visible, toggle the production screen's pedia, not the one of the map screen
     if (m_in_production_view_mode) {
@@ -6476,6 +6566,7 @@ void MapWnd::ShowProduction() {
         RemoveWindows();
         GG::GUI::GetGUI()->Remove(ClientUI::GetClientUI()->GetMessageWnd());
         GG::GUI::GetGUI()->Remove(ClientUI::GetClientUI()->GetPlayerListWnd());
+        GG::GUI::GetGUI()->Remove(ClientUI::GetClientUI()->GetSpecialsListWnd());
     }
 
     m_in_production_view_mode = true;
@@ -6518,6 +6609,7 @@ void MapWnd::HideProduction() {
     RegisterWindows();
     GG::GUI::GetGUI()->Register(ClientUI::GetClientUI()->GetMessageWnd());
     GG::GUI::GetGUI()->Register(ClientUI::GetClientUI()->GetPlayerListWnd());
+    GG::GUI::GetGUI()->Register(ClientUI::GetClientUI()->GetSpecialsListWnd());
 
     ShowAllPopups();
     RestoreSidePanel();
