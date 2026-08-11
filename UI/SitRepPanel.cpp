@@ -104,7 +104,7 @@ namespace {
     class SitRepLinkText;
     std::shared_ptr<SitRepLinkText> last_clicked_link_text;
     void MyHandleLinkClick(const std::string& link_type, const std::string& data, std::shared_ptr<SitRepLinkText> m_link_text) {
-	last_clicked_link_text = m_link_text;
+        last_clicked_link_text = m_link_text;
         HandleLinkClick(link_type, data);
     }
 

@@ -10,6 +10,7 @@
 #include "../util/Logger.h"
 #include "../util/OptionsDB.h"
 #include "../universe/Ship.h"
+#include "../universe/Special.h"
 #include "../universe/Planet.h"
 #include "../universe/System.h"
 #include "../universe/Enums.h"
@@ -39,8 +40,9 @@ namespace {
             if (m_level1)
                 m_header->SetFont(ClientUI::GetBoldFont());
             else
-                m_header->SetFont(ClientUI::GetFont());
+                m_header->SetFont(ClientUI::GetBoldFont());
             GG::Pt size = m_header->MinUsableSize(Width()); // @TODO max(., outside with)
+            size.x = Width();
             std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
             m_header->Resize(size);
             Resize(size);
@@ -75,29 +77,52 @@ namespace {
         }
     };
 
-    // copied from SitRep, can/will be expanded to mark empire, size, and if the focus fits
-    class ColorEmpire : public LinkDecorator {
-    public:
-        std::string Decorate(const std::string& target, const std::string& content) const override {
-            GG::Clr color = ClientUI::DefaultLinkColor();
-            int id = CastStringToInt(target);
-            Empire* empire = GetEmpire(id);
-            if (empire)
-                color = empire->Color();
-            return GG::RgbaTag(color) + content + "</rgba>";
-        }
-    };
 
+	// copied from ColorByOwner, expanded
+
+	class ColorPlanet: public LinkDecorator {
+	public:
+		ColorPlanet(std::string focustype) :
+			m_focustype(focustype)
+		{}
+
+		std::string Decorate(const std::string& object_id_str, const std::string& content) const {
+			GG::Clr color = ClientUI::DefaultLinkColor();
+			const Empire* empire = nullptr;
+			// get object indicated by object_id, and then get object's owner, if any
+			int object_id = CastStringToInt(object_id_str);
+			auto object = Objects().Object(object_id);
+			if (object && !object->Unowned())
+				empire = GetEmpire(object->Owner());
+			if (empire)
+				color = empire->Color();
+			auto planet = GetPlanet(object_id);
+			std::string sfocus = "", efocus = "";
+			if (planet && planet->Focus() == m_focustype) {
+			    sfocus="<u>";
+			    efocus="</u>";
+			}
+			return sfocus + GG::RgbaTag(color) + content + "</rgba>" + efocus;
+		}
+    private:
+		std::string m_focustype;
+	};
+
+	void HandleLinkClick(const std::string& link_type, const std::string& data) {
+		if (link_type == VarText::PLANET_ID_TAG) {
+			ClientUI::GetClientUI()->ZoomToPlanet(atoi(data.c_str()));
+		}
+	}
 
     ////////////////////////////////////////////////
     // SpecialsListPanel
     ////////////////////////////////////////////////
     class SpecialsListPanel : public GG::Control {
     public:
-        SpecialsListPanel(std::string text,
+        SpecialsListPanel(GG::X w, GG::Y h, std::string text,
                 std::string focustype,
                 std::string spec1, std::string spec2, std::string spec3) :
-            Control(GG::X0, GG::Y0, GG::X(10), GG::Y(25), GG::NO_WND_FLAGS),
+            Control(GG::X0, GG::Y0, w, h, GG::NO_WND_FLAGS),
             m_text(text),
             m_focustype(focustype),
             m_spec1(spec1),
@@ -122,7 +147,8 @@ namespace {
 			body = GG::Wnd::Create<LinkText>(GG::X0, GG::Y(y), Width(), special,
 				ClientUI::GetFont(),
 				GG::FORMAT_LEFT | GG::FORMAT_VCENTER | GG::FORMAT_WORDBREAK, ClientUI::TextColor());
-			body -> SetDecorator(VarText::EMPIRE_ID_TAG, new ColorEmpire());
+			body -> SetDecorator(VarText::PLANET_ID_TAG, new ColorPlanet(m_focustype));
+			body -> LinkClickedSignal.connect(&HandleLinkClick);
 			AttachChild(body);
 		}
 
@@ -142,11 +168,72 @@ namespace {
             if (m_v1) { FillPlanets(m_v1, m_spec1); }
             if (m_v2) { FillPlanets(m_v2, m_spec2); }
             if (m_v3) { FillPlanets(m_v3, m_spec3); }
+            DoLayout();
         }
 
         void    FillPlanets(std::shared_ptr<LinkText> widget, std::string& spectype) {
-            std::cout << "Filling Planets with special " << spectype << " and focus " << m_focustype << std::endl;
-			widget->SetText(spectype + "/" + m_focustype);
+            // std::cout << "Filling Planets with special " << spectype << " and focus " << m_focustype << std::endl;
+			int client_empire_id = HumanClientApp::GetApp()->EmpireID();
+			const std::set<int> objectids = GetUniverse().EmpireVisibleObjectIDs(client_empire_id);
+			std::string planetlist = "";
+            VarText vartext(planetlist, false);
+            int foundplanets = 0;
+			for (const auto objectid: objectids) {
+				auto planet = GetPlanet(objectid);
+				if (!planet) { continue; }
+				// std::cout << "testing " << planet->Name() << std::endl;
+				for (const auto entry: planet->Specials()) {
+                    const Special *special = GetSpecial(entry.first);
+					// std::cout << "  object id " << objectid << " (" << planet->Name() << ") has special " << special->Name() << std::endl;
+					if (special->Name() == spectype) {
+						// std::cout << "    planet has focus " << planet->Focus() << std::endl;
+                        foundplanets++;
+                        std::string varname = "p" + std::to_string(foundplanets);
+                        vartext.AddVariable(varname, std::to_string(objectid));
+
+						if (!planetlist.empty()) {
+							planetlist += ", ";
+						}
+						planetlist += "%planet:"+varname+"%";
+					}
+				}
+			}
+            vartext.SetTemplateString(planetlist+"  ", false);	// need the blanks as we dont get a link at the end
+			widget->SetText(vartext.GetText());
+        }
+
+        int DoSingleLayout(std::shared_ptr<SpecialsListHeader> control, int y) {
+            if (!control) { return 0; }
+            GG::Pt lt (GG::X0, GG::Y(y));
+            GG::Pt size(Width(), GG::Y(25));
+            GG::Pt rb(lt + size);
+            std::cout << "doSingleLayout moving control to " << lt << " / " << rb << std::endl;
+            control->SizeMove(lt, rb);
+            return 25;
+        }
+
+        int DoSingleLayout(std::shared_ptr<LinkText> control, int y) {
+            if (!control) { return 0; }
+            GG::Pt lt (GG::X0, GG::Y(y));
+            GG::Pt size = control->MinUsableSize(Width());
+            size.x = Width();
+            GG::Pt rb(lt + size);
+            std::cout << "doSingleLayout moving text to " << lt << " / " << rb << std::endl;
+            control->SizeMove(lt, rb);
+            return Value(size.y);
+        }
+
+        int DoLayout() {
+            int y = 0;
+            y += DoSingleLayout(m_ptext, y);
+            y += DoSingleLayout(m_p1, y);
+            y += DoSingleLayout(m_v1, y);
+            y += DoSingleLayout(m_p2, y);
+            y += DoSingleLayout(m_v2, y);
+            y += DoSingleLayout(m_p3, y);
+            y += DoSingleLayout(m_v3, y);
+
+            return y;
         }
 
         /** This function overridden because otherwise, rows don't expand
@@ -155,8 +242,13 @@ namespace {
             const GG::Pt old_size = Size();
             GG::Control::SizeMove(ul, lr);
             //std::cout << "SpecialsRow::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
-            // if (old_size != Size() && m_panel)
-            //     m_panel->Resize(Size());
+            if (old_size != Size()) {
+                int neededHeight = DoLayout();
+                GG::Pt newSize = GG::Pt(Width(), GG::Y(neededHeight));
+                // why does this work in SitRepPanel:324 but not here?
+                std::cout << "resizing panel to " << newSize << std::endl;
+                GG::Control::SizeMove(ul, ul+newSize);
+            }
         }
 
     private:
@@ -186,7 +278,8 @@ namespace {
 
         void CompleteConstruction() override {
             GG::ListBox::Row::CompleteConstruction();
-            m_panel = GG::Wnd::Create<SpecialsListPanel>(m_text, m_focustype, m_spec1, m_spec2, m_spec3);
+            m_panel = GG::Wnd::Create<SpecialsListPanel>(Width(), Height(),
+                    m_text, m_focustype, m_spec1, m_spec2, m_spec3);
             push_back(m_panel);
         }
 

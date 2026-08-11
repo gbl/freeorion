@@ -251,7 +251,8 @@ bool VarText::Validate() const {
 }
 
 void VarText::SetTemplateString(const std::string& text, bool stringtable_lookup_template/* = true*/) {
-    m_text = text;
+    m_template_string = text;
+    m_text = "";
     m_stringtable_lookup_flag = stringtable_lookup_template;
 }
 
