@@ -7,4 +7,4 @@ if test ! -d build; then
 fi
 
 cd build
-make -j4 "INSTALL=install --strip-program=true"
+make -j8 "INSTALL=install --strip-program=true"
