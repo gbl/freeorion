@@ -6398,7 +6398,6 @@ bool MapWnd::ToggleEmpires() {
 }
 
 void MapWnd::ShowSpecials() {
-    std::cerr << "ShowSpecials" << std::endl;
     // hide other "competing" windows
     HideResearch();
     HideProduction();
@@ -6413,7 +6412,6 @@ void MapWnd::ShowSpecials() {
     GG::GUI* gui = GG::GUI::GetGUI();
     if (!gui)
         return;
-    fprintf(stderr, "Calling show on %p\n", spec_wnd.get());
     spec_wnd->Show();
     gui->MoveUp(spec_wnd);
     PushWndStack(spec_wnd);
@@ -6424,7 +6422,6 @@ void MapWnd::ShowSpecials() {
 }
 
 void MapWnd::HideSpecials() {
-    std::cerr << "HideSpecials" << std::endl;
     if (ClientUI* cui = ClientUI::GetClientUI()) {
         cui->GetSpecialsListWnd()->Hide();
         RemoveFromWndStack(cui->GetSpecialsListWnd());

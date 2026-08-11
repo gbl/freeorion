@@ -688,11 +688,7 @@ std::shared_ptr<PlayerListWnd> ClientUI::GetPlayerListWnd()
 { return m_player_list_wnd; }
 
 std::shared_ptr<SpecialsListWnd> ClientUI::GetSpecialsListWnd()
-{
-    fprintf(stderr, "specials list is %p\n", m_specials_list_wnd.get());
-    fflush(stderr);
-    return m_specials_list_wnd;
-}
+{ return m_specials_list_wnd; }
 
 std::shared_ptr<IntroScreen> ClientUI::GetIntroScreen()
 { return m_intro_screen; }
