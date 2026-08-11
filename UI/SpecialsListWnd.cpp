@@ -13,6 +13,7 @@
 #include "../universe/Planet.h"
 #include "../universe/System.h"
 #include "../universe/Enums.h"
+#include "../util/VarText.h"
 
 #include <GG/DrawUtil.h>
 
@@ -25,22 +26,26 @@ namespace {
     class SpecialsListHeader : public GG::Control {
    
     public:
-        SpecialsListHeader(GG::X w, GG::Y h, std::string text): 
-            Control(GG::X0, GG::Y0, w, h, GG::NO_WND_FLAGS),
-            m_header_text(text)
+        SpecialsListHeader(GG::X left, GG::Y top, GG::X w, GG::Y h, bool level1, std::string text): 
+            Control(left, top, w, h, GG::NO_WND_FLAGS),
+            m_level1(level1),
+            m_header_text(UserString(text))
         {}
 
         void CompleteConstruction() override {
             GG::Control::CompleteConstruction();
             SetChildClippingMode(ClipToClient);     // line wrap here ?? 
             m_header = GG::Wnd::Create<CUILabel>(m_header_text, GG::FORMAT_LEFT);   // bold?
-            m_header->SetFont(ClientUI::GetBoldFont());
-            GG::Pt size = m_header->MinUsableSize(Width());
+            if (m_level1)
+                m_header->SetFont(ClientUI::GetBoldFont());
+            else
+                m_header->SetFont(ClientUI::GetFont());
+            GG::Pt size = m_header->MinUsableSize(Width()); // @TODO max(., outside with)
+            std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
             m_header->Resize(size);
             Resize(size);
             AttachChild(m_header);
             DoLayout();
-            Update();
         }
 
         /** Excludes border from the client area. */
@@ -53,17 +58,16 @@ namespace {
 
 
         void Render() {
-            GG::FlatRectangle(ClientUpperLeft(), ClientLowerRight(), ClientUI::WndOuterBorderColor(),
-                GG::CLR_ZERO, 0);
-            /*
-            GG::Control::Render();
-            */
-        }
-
-        void Update() {
+            // std::cout << "level1 is " << m_level1 << ", rendering for " << m_header_text << " in rect "
+            //    << ClientUpperLeft() <<  " to " << ClientLowerRight() << std::endl;
+            if (m_level1) {
+                GG::FlatRectangle(ClientUpperLeft(), ClientLowerRight(), ClientUI::WndOuterBorderColor(),
+                    GG::CLR_ZERO, 0);
+            }
         }
 
         private:
+            bool m_level1;
             std::string m_header_text;
             std::shared_ptr<GG::Label>               m_header;
             
@@ -71,37 +75,124 @@ namespace {
         }
     };
 
+    // copied from SitRep, can/will be expanded to mark empire, size, and if the focus fits
+    class ColorEmpire : public LinkDecorator {
+    public:
+        std::string Decorate(const std::string& target, const std::string& content) const override {
+            GG::Clr color = ClientUI::DefaultLinkColor();
+            int id = CastStringToInt(target);
+            Empire* empire = GetEmpire(id);
+            if (empire)
+                color = empire->Color();
+            return GG::RgbaTag(color) + content + "</rgba>";
+        }
+    };
+
+
     ////////////////////////////////////////////////
-    // PlayerRow
+    // SpecialsListPanel
+    ////////////////////////////////////////////////
+    class SpecialsListPanel : public GG::Control {
+    public:
+        SpecialsListPanel(std::string text,
+                std::string focustype,
+                std::string spec1, std::string spec2, std::string spec3) :
+            Control(GG::X0, GG::Y0, GG::X(10), GG::Y(25), GG::NO_WND_FLAGS),
+            m_text(text),
+            m_focustype(focustype),
+            m_spec1(spec1),
+            m_spec2(spec2),
+            m_spec3(spec3),
+            m_ptext(nullptr),
+            m_p1(nullptr), m_p2(nullptr), m_p3(nullptr),
+            m_v1(nullptr), m_v2(nullptr), m_v3(nullptr)
+        {
+            SetName("SpecialsListRow");
+            SetChildClippingMode(ClipToClient);
+        }
+
+		void ConstructEntry(int& y, std::shared_ptr<SpecialsListHeader> &head,
+			std::shared_ptr<LinkText> &body, std::string &special) {
+			if (special.empty()) return;
+			y+=25;
+			std::cout << "creating line for " << special << " at y=" << y << std::endl;
+			head = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), false, special);
+			AttachChild(head);
+			y+=25;
+			body = GG::Wnd::Create<LinkText>(GG::X0, GG::Y(y), Width(), special,
+				ClientUI::GetFont(),
+				GG::FORMAT_LEFT | GG::FORMAT_VCENTER | GG::FORMAT_WORDBREAK, ClientUI::TextColor());
+			body -> SetDecorator(VarText::EMPIRE_ID_TAG, new ColorEmpire());
+			AttachChild(body);
+		}
+
+        void CompleteConstruction() override {
+            int y = 0;
+            GG::Control::CompleteConstruction();
+            SetChildClippingMode(ClipToClient);
+            m_ptext = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), true, m_text);
+            AttachChild(m_ptext);
+			ConstructEntry(y, m_p1, m_v1, m_spec1);
+			ConstructEntry(y, m_p2, m_v2, m_spec2);
+			ConstructEntry(y, m_p3, m_v3, m_spec3);
+            Update();
+        }
+
+        void    Update() {
+            if (m_v1) { FillPlanets(m_v1, m_spec1); }
+            if (m_v2) { FillPlanets(m_v2, m_spec2); }
+            if (m_v3) { FillPlanets(m_v3, m_spec3); }
+        }
+
+        void    FillPlanets(std::shared_ptr<LinkText> widget, std::string& spectype) {
+            std::cout << "Filling Planets with special " << spectype << " and focus " << m_focustype << std::endl;
+			widget->SetText(spectype + "/" + m_focustype);
+        }
+
+        /** This function overridden because otherwise, rows don't expand
+          * larger than their initial size when resizing the list. */
+        void SizeMove(const GG::Pt& ul, const GG::Pt& lr) override {
+            const GG::Pt old_size = Size();
+            GG::Control::SizeMove(ul, lr);
+            //std::cout << "SpecialsRow::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
+            // if (old_size != Size() && m_panel)
+            //     m_panel->Resize(Size());
+        }
+
+    private:
+        std::string m_text, m_focustype, m_spec1, m_spec2, m_spec3;
+        std::shared_ptr<SpecialsListHeader>    m_ptext, m_p1, m_p2, m_p3;
+        std::shared_ptr<LinkText> m_v1, m_v2, m_v3;
+    };
+
+    ////////////////////////////////////////////////
+    // SpecialsListRow
     ////////////////////////////////////////////////
     class SpecialsListRow : public GG::ListBox::Row {
     public:
-        SpecialsListRow(GG::X w, GG::Y h, std::string text) :
+        SpecialsListRow(GG::X w, GG::Y h, std::string text,
+        std::string focustype,
+        std::string spec1, std::string spec2, std::string spec3) :
             GG::ListBox::Row(w, h, "", GG::ALIGN_NONE, 0),
             m_text(text),
-            m_panel(nullptr)
+            m_focustype(focustype),
+            m_spec1(spec1),
+            m_spec2(spec2),
+            m_spec3(spec3)
         {
             SetName("SpecialsListRow");
             SetChildClippingMode(ClipToClient);
         }
 
         void CompleteConstruction() override {
-
             GG::ListBox::Row::CompleteConstruction();
-            m_panel = GG::Wnd::Create<SpecialsListHeader>(Width(), Height(), m_text);
+            m_panel = GG::Wnd::Create<SpecialsListPanel>(m_text, m_focustype, m_spec1, m_spec2, m_spec3);
             push_back(m_panel);
-        }
-
-        std::string     RowName() const {
-            return m_text;
         }
 
         void    Update() {
             if (m_panel)
                 m_panel->Update();
-        }
-
-        void    SetStatus(Message::PlayerStatus player_status) {
         }
 
         /** This function overridden because otherwise, rows don't expand
@@ -113,10 +204,9 @@ namespace {
             if (!empty() && old_size != Size() && m_panel)
                 m_panel->Resize(Size());
         }
-
     private:
-        std::string                 m_text;
-        std::shared_ptr<SpecialsListHeader>    m_panel;
+        std::shared_ptr<SpecialsListPanel>    m_panel;
+        std::string m_text, m_focustype, m_spec1, m_spec2, m_spec3;
     };
 }
 
@@ -151,7 +241,7 @@ public:
     { return GG::Pt(Width() - ClientUI::ScrollWidth() - 5, ListRowHeight()); }
 
     static GG::Y    ListRowHeight()
-    { return GG::Y(ClientUI::Pts() * 3/2); }  // to change dependent on text height?
+    { return GG::Y(ClientUI::Pts() * 3/2 * 7); }
 };
 
 
@@ -187,11 +277,18 @@ void SpecialsListWnd::Update() {
 void SpecialsListWnd::Refresh() {
     m_specials_list->Clear();
     
+    // move this to a config file? There isn't one that's suitable rn.
+
     const GG::Pt row_size = m_specials_list->ListRowSize();
-    auto organic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "Organic");
-    auto lithic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "Lithic");
-    auto robotic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "Robotic");
-    auto compmoon_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "Computronium Moon");
+    auto organic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "ORGANIC", "FOCUS_GROWTH",
+        "SPICE_SPECIAL", "FRUIT_SPECIAL", "PROBIOTIC_SPECIAL");
+    auto lithic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "LITHIC", "FOCUS_GROWTH",
+        "CRYSTALS_SPECIAL", "MINERALS_SPECIAL", "ELERIUM_SPECIAL");
+    auto robotic_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "ROBOTIC", "FOCUS_GROWTH",
+        "MONOPOLE_SPECIAL", "SUPERCONDUCTOR_SPECIAL", "POSITRONIUM_SPECIAL");
+    auto compmoon_row = GG::Wnd::Create<SpecialsListRow>(row_size.x, row_size.y, "COMPUTRONIUM_SPECIAL",
+                                                                                    "FOCUS_RESEARCH",
+        "COMPUTRONIUM_SPECIAL", "", "");
 
     m_specials_list->Insert(organic_row);
     m_specials_list->Insert(lithic_row);
@@ -214,7 +311,6 @@ void SpecialsListWnd::SizeMove(const GG::Pt& ul, const GG::Pt& lr) {
 
 void SpecialsListWnd::DoLayout()
 {
-    std::cout << "Specials List Do Layout" << GG::Pt() << " " << ClientWidth() << " " << ClientHeight() << std::endl;
     if (m_specials_list)
         m_specials_list->SizeMove(GG::Pt(), GG::Pt(ClientWidth(), ClientHeight() - GG::Y(INNER_BORDER_ANGLE_OFFSET)));
 }
