@@ -25,8 +25,8 @@ BuildingType
                 SetPlanetType type = Barren
                 AddSpecial name = "GAIA_SPECIAL"
                 GenerateSitRepMessage
-                    message = "EFFECT_ART_PLANET"
-                    label = "EFFECT_ART_PLANET_LABEL"
+                    message = "EFFECT_ART_PARADISE"
+                    label = "EFFECT_ART_PARADISE_LABEL"
                     icon = "icons/specials_large/gaia.png"
                     parameters = tag = "planet" data = Target.ID
                     empire = Source.Owner

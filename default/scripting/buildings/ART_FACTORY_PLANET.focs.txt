@@ -27,8 +27,8 @@ BuildingType
                 SetSpecies name = "SP_EXOBOT"
                 SetPopulation value = 1
                 GenerateSitRepMessage
-                    message = "EFFECT_ART_PLANET"
-                    label = "EFFECT_ART_PLANET_LABEL"
+                    message = "EFFECT_ART_FACTORY"
+                    label = "EFFECT_ART_FACTORY_LABEL"
                     icon = "icons/species/robotic-01.png"
                     parameters = tag = "planet" data = Target.ID
                     empire = Source.Owner

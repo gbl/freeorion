@@ -6731,11 +6731,23 @@ EFFECT_BLACKHOLE
 EFFECT_BLACKHOLE_LABEL
 Black Hole
 
+EFFECT_ART_FACTORY
+%planet% has been turned into a factory planet.
+
+EFFECT_ART_FACTORY_LABEL
+Factory Planet
+
+EFFECT_ART_PARADISE
+%planet% has been turned into a artificial paradise.
+
+EFFECT_ART_PARADISE_LABEL
+Artificial Paradise
+
 EFFECT_ART_PLANET
 %planet% has been turned into an artificial planet.
 
 EFFECT_ART_PLANET_LABEL
-Black Hole
+Artificial Planet
 
 INTERSPECIES_ACADEMY_LABEL
 Species InterDesign Academy
