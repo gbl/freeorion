@@ -43,7 +43,7 @@ namespace {
                 m_header->SetFont(ClientUI::GetBoldFont());
             GG::Pt size = m_header->MinUsableSize(Width()); // @TODO max(., outside with)
             size.x = Width();
-            std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
+            // std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
             m_header->Resize(size);
             Resize(size);
             AttachChild(m_header);
@@ -140,7 +140,7 @@ namespace {
 			std::shared_ptr<LinkText> &body, std::string &special) {
 			if (special.empty()) return;
 			y+=25;
-			std::cout << "creating line for " << special << " at y=" << y << std::endl;
+			// std::cout << "creating line for " << special << " at y=" << y << std::endl;
 			head = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), false, special);
 			AttachChild(head);
 			y+=25;
@@ -207,7 +207,7 @@ namespace {
             GG::Pt lt (GG::X0, GG::Y(y));
             GG::Pt size(Width(), GG::Y(25));
             GG::Pt rb(lt + size);
-            std::cout << "doSingleLayout moving control to " << lt << " / " << rb << std::endl;
+            // std::cout << "doSingleLayout moving control to " << lt << " / " << rb << std::endl;
             control->SizeMove(lt, rb);
             return 25;
         }
@@ -218,7 +218,7 @@ namespace {
             GG::Pt size = control->MinUsableSize(Width());
             size.x = Width();
             GG::Pt rb(lt + size);
-            std::cout << "doSingleLayout moving text to " << lt << " / " << rb << std::endl;
+            // std::cout << "doSingleLayout moving text to " << lt << " / " << rb << std::endl;
             control->SizeMove(lt, rb);
             return Value(size.y);
         }
