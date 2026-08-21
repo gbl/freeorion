@@ -414,7 +414,7 @@ std::vector<std::shared_ptr<GG::Texture>> FleetHeadIcons(const std::vector<std::
         return std::vector<std::shared_ptr<GG::Texture>>();
 
     // the set of fleets is treated like a fleet that contains all the ships
-    bool hasColonyShips = false; bool hasOutpostShips = false; bool hasTroopShips = false; bool hasMonsters = false; bool hasArmedShips = false;
+    bool hasColonyShips = false; bool hasOutpostShips = false; bool hasTroopShips = false; bool hasMonsters = false; bool hasArmedShips = false, hasLogisticsFacilitator = false;
     for (auto& fleet : fleets) {
         if (!fleet)
             continue;
@@ -424,6 +424,7 @@ std::vector<std::shared_ptr<GG::Texture>> FleetHeadIcons(const std::vector<std::
         hasTroopShips   = hasTroopShips   || fleet->HasTroopShips();
         hasMonsters     = hasMonsters     || fleet->HasMonsters();
         hasArmedShips   = hasArmedShips   || fleet->HasArmedShips() || fleet->HasFighterShips();
+        hasLogisticsFacilitator= hasLogisticsFacilitator   || fleet->HasLogisticsFacilitator();
     }
 
     // get file name main part depending on type of fleet
@@ -437,6 +438,7 @@ std::vector<std::shared_ptr<GG::Texture>> FleetHeadIcons(const std::vector<std::
         if (hasColonyShips)  { main_filenames.push_back("head-colony.png");  }
         if (hasOutpostShips) { main_filenames.push_back("head-outpost.png"); }
         if (hasTroopShips)   { main_filenames.push_back("head-lander.png");  }
+        if (hasLogisticsFacilitator)    { main_filenames.push_back("head-logfac.png");  }
     }
     if (main_filenames.empty()) { main_filenames.push_back("head-scout.png"); }
 

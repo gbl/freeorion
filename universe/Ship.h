@@ -53,6 +53,7 @@ public:
     int                         ArrivedOnTurn() const       { return m_arrived_on_turn; }       ///< returns the turn on which this ship arrived in its current system
     int                         LastResuppliedOnTurn() const{ return m_last_resupplied_on_turn;}///< returns the turn on which this ship was last resupplied / upgraded
 
+    bool                        IsLogisticsFacilitator() const;
     bool                        IsMonster() const;
     bool                        IsArmed() const;
     bool                        HasFighters() const;

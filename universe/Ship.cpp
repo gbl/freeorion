@@ -236,6 +236,10 @@ std::string Ship::Dump(unsigned short ntabs) const {
 const ShipDesign* Ship::Design() const
 { return GetShipDesign(m_design_id); }
 
+bool Ship::IsLogisticsFacilitator() const {
+    return HasTag("LOGISTICS_FACILITATOR");
+}
+
 bool Ship::IsMonster() const {
     const ShipDesign* design = Design();
     if (design)

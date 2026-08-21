@@ -649,6 +649,11 @@ namespace {
     }
 }
 
+bool Fleet::HasLogisticsFacilitator() const {
+    auto isX = [](const std::shared_ptr<const Ship>& ship){ return ship->IsLogisticsFacilitator(); };
+    return HasXShips(isX, m_ships);
+}
+
 bool Fleet::HasMonsters() const {
     auto isX = [](const std::shared_ptr<const Ship>& ship){ return ship->IsMonster(); };
     return HasXShips(isX, m_ships);
