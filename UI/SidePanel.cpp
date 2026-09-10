@@ -414,6 +414,8 @@ namespace {
                true,                        Validator<bool>());
         db.Add("ui.map.sidepanel.planet.scanlane.color",    UserStringNop("OPTIONS_DB_UI_PLANET_FOG_CLR"),
                GG::Clr(0, 0, 0, 128),       Validator<GG::Clr>());
+        db.Add("ui.map.sidepanel.surface.shown",            UserStringNop("OPTIONS_DB_UI_SIDEPANEL_SURFACE_SHOWN"),
+               true,                        Validator<bool>());
     }
     bool temp_bool = RegisterOptions(&AddOptions);
 
@@ -713,7 +715,7 @@ public:
             }
         }
 
-        if (!planet->SurfaceTexture().empty())
+        if (GetOptionsDB().Get<bool>("ui.map.sidepanel.surface.shown") && !planet->SurfaceTexture().empty())
             m_overlay_texture = ClientUI::GetTexture(ClientUI::ArtDir() / planet->SurfaceTexture(), true);
 
         Resize(GG::Pt(GG::X(PlanetDiameter(planet->Size())), GG::Y(PlanetDiameter(planet->Size()))));
