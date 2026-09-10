@@ -87,7 +87,7 @@ namespace {
 		{}
 
 		std::string Decorate(const std::string& object_id_str, const std::string& content) const {
-			GG::Clr color = ClientUI::DefaultLinkColor();
+			GG::Clr color = GG::CLR_WHITE;
 			const Empire* empire = nullptr;
 			// get object indicated by object_id, and then get object's owner, if any
 			int object_id = CastStringToInt(object_id_str);
@@ -178,22 +178,51 @@ namespace {
 			std::string planetlist = "";
             VarText vartext(planetlist, false);
             int foundplanets = 0;
-			for (const auto objectid: objectids) {
-				auto planet = GetPlanet(objectid);
-				if (!planet) { continue; }
+            PlanetSize last_planet_size = INVALID_PLANET_SIZE;
+
+            std::vector<int> planets_by_size;
+            std::copy_if(objectids.begin(), objectids.end(),
+                std::inserter(planets_by_size, planets_by_size.end()),
+                          [](int x) { return GetPlanet(x); });
+
+            // Order planets by size, but asteroid belts first
+            std::sort(planets_by_size.begin(), planets_by_size.end(), [] (int a, int b) {
+                auto planeta = GetPlanet(a); if (!planeta) return true;    // should not happen
+                auto planetb = GetPlanet(b); if (!planetb) return false;    // should not happen
+                if (planeta->Size() == planetb->Size()) {
+                    return planeta->Name() < planetb->Name();
+                }
+                if (planeta->Size() == SZ_ASTEROIDS) {
+                    return true;
+                }
+                if (planetb->Size() == SZ_ASTEROIDS) {
+                    return false;
+                }
+                return planeta->Size() < planetb->Size();
+            });
+			for (const auto planetid: planets_by_size) {
+				auto planet = GetPlanet(planetid);
+				if (!planet) { continue; }  // should not happen
 				// std::cout << "testing " << planet->Name() << std::endl;
 				for (const auto entry: planet->Specials()) {
                     const Special *special = GetSpecial(entry.first);
-					// std::cout << "  object id " << objectid << " (" << planet->Name() << ") has special " << special->Name() << std::endl;
+					// std::cout << "  object id " << planetid << " (" << planet->Name() << ") has special " << special->Name() << std::endl;
 					if (special->Name() == spectype) {
 						// std::cout << "    planet has focus " << planet->Focus() << std::endl;
                         foundplanets++;
                         std::string varname = "p" + std::to_string(foundplanets);
-                        vartext.AddVariable(varname, std::to_string(objectid));
+                        vartext.AddVariable(varname, std::to_string(planetid));
 
 						if (!planetlist.empty()) {
 							planetlist += ", ";
 						}
+                        if (last_planet_size != planet->Size()) {
+                            char letter = UserString(boost::lexical_cast<std::string>(planet->Size())).at(0);
+                            planetlist += "<i>";
+                            planetlist += letter;
+                            planetlist += ":</i> ";
+                            last_planet_size = planet->Size();
+                        }
 						planetlist += "%planet:"+varname+"%";
 					}
 				}
