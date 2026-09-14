@@ -936,6 +936,24 @@ void BuildDesignatorWnd::BuildSelector::BuildItemLeftClicked(GG::ListBox::iterat
     }
 }
 
+namespace {
+    bool production_item_is_attack_ship(const ProductionQueue::ProductionItem& item) {
+        if (item.build_type != BT_SHIP) {
+            return false;
+        }
+        int design_id = item.design_id;
+        const ShipDesign *design = GetShipDesign(design_id);
+        if (!design) {
+            return false;
+        }
+        std::cout << "Checking if ship design " << design->Name() << " is armed: " << design->IsArmed() << std::endl;
+        if (!design->IsArmed()) {
+            return false;
+        }
+        return true;
+    }
+}
+
 void BuildDesignatorWnd::BuildSelector::AddBuildItemToQueue(GG::ListBox::iterator it, bool top) {
     if ((*it)->Disabled())
         return;
@@ -944,7 +962,35 @@ void BuildDesignatorWnd::BuildSelector::AddBuildItemToQueue(GG::ListBox::iterato
         return;
     const ProductionQueue::ProductionItem& item = item_row->Item();
 
-    RequestBuildItemSignal(item, 1, top ? 0 : -1);
+    int pos;
+    if (top) {
+        pos = 0;    // insert at top
+    } else if (!production_item_is_attack_ship(item)) {
+        int client_empire_id = HumanClientApp::GetApp()->EmpireID();
+        Empire* empire = GetEmpire(client_empire_id);
+        if (!empire) {
+            return;
+        }
+        // get the list of orders
+        const ProductionQueue& queue = empire->GetProductionQueue();
+
+        // set pos to the number of entries
+        pos = queue.size() - 1;
+
+        // while pos > 0 and entry[pos] is a ship type that has attack capability
+        while (pos > 0) {
+            if (!production_item_is_attack_ship(queue[pos].item))
+                break;
+            pos--;
+            std::cout << "Moving new order up to " << pos << " because at " << (pos+1)
+                << " is an attack ship" << std::endl;
+        }
+        pos++;
+    } else  {
+        pos = -1;   // insert at bottom
+    }
+    std::cout << "request build item at " << pos << std::endl;
+    RequestBuildItemSignal(item, 1, pos);
 }
 
 void BuildDesignatorWnd::BuildSelector::BuildItemRightClicked(GG::ListBox::iterator it,
