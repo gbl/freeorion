@@ -946,7 +946,7 @@ namespace {
         if (!design) {
             return false;
         }
-        std::cout << "Checking if ship design " << design->Name() << " is armed: " << design->IsArmed() << std::endl;
+        // std::cout << "Checking if ship design " << design->Name() << " is armed: " << design->IsArmed() << std::endl;
         if (!design->IsArmed()) {
             return false;
         }
@@ -978,18 +978,18 @@ void BuildDesignatorWnd::BuildSelector::AddBuildItemToQueue(GG::ListBox::iterato
         pos = queue.size() - 1;
 
         // while pos > 0 and entry[pos] is a ship type that has attack capability
-        while (pos > 0) {
+        while (pos >= 0) {
             if (!production_item_is_attack_ship(queue[pos].item))
                 break;
             pos--;
-            std::cout << "Moving new order up to " << pos << " because at " << (pos+1)
-                << " is an attack ship" << std::endl;
+            // std::cout << "Moving new order up to " << pos << " because at " << (pos+1)
+            //     << " is an attack ship" << std::endl;
         }
         pos++;
     } else  {
         pos = -1;   // insert at bottom
     }
-    std::cout << "request build item at " << pos << std::endl;
+    // std::cout << "request build item at " << pos << std::endl;
     RequestBuildItemSignal(item, 1, pos);
 }
 
