@@ -11,7 +11,7 @@ BuildingType
     description = "BLD_SHIPYARD_ORBITAL_DRYDOCK_DESC"
     buildcost = 20 * [[BUILDING_COST_MULTIPLIER]]
     buildtime = 5
-    tags = "ORBITAL"
+    tags = [ "ORBITAL" "CTRL_DRYDOCK" ]
     location = And [
         Planet
         Not Contains Building name = "BLD_SHIPYARD_ORBITAL_DRYDOCK"

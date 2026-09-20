@@ -7,13 +7,14 @@
 #include <boost/signals2/signal.hpp>
 
 
-/** @content_tag{CTRL_SHIPYARD} Building is to be treated as a shipyard when formatting containing objects
+/** @content_tag{CTRL_SHIPYARD} Building is to be treated as a shipyard when formatting containing objects. {CTRL_DRYDOCK} same with orbital drydock. Having both means double wide underline.
  * 
  * For objects containing a building with this tag:
  * * Planets have an underlined name in the sidepanel
  * * Systems have their name underlined on the map and sidepanel
  */
 const std::string TAG_SHIPYARD = "CTRL_SHIPYARD";
+const std::string TAG_DRYDOCK = "CTRL_DRYDOCK";
 
 class FleetButton;
 class RotatingGraphic;

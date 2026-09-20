@@ -115,7 +115,7 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
 
     // loop through planets in system, checking if any are a homeworld, capital
     // or have a shipyard, or have neutral population
-    bool capital = false, homeworld = false, has_shipyard = false, has_neutrals = false, has_player_planet = false;
+    bool capital = false, homeworld = false, has_shipyard = false, has_drydock = false, has_neutrals = false, has_player_planet = false;
     bool has_neutronium = false, has_stargate = false;
 
     std::set<std::string> shipyards;
@@ -163,6 +163,9 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
             if (building->HasTag(TAG_SHIPYARD)) {
                 has_shipyard = true;
             }
+            if (building->HasTag(TAG_DRYDOCK)) {
+                has_drydock = true;
+            }
             // Maybe it's a better idea to mark all buildings
             // with tags instead if relying on the BLD_SHIPYARD name?
             std::string type = building->BuildingTypeName();
@@ -201,7 +204,10 @@ OwnerColoredSystemName::OwnerColoredSystemName(int system_id, int font_size,
     std::string wrapped_system_name = ColorNameByOwners(system_name, owner_empire_ids, empire_manager);
     if (homeworld)
         wrapped_system_name = "<i>" + wrapped_system_name + "</i>";
+    // this relies on double <u> giving a wider underline in Font.cpp
     if (has_shipyard)
+        wrapped_system_name = "<u>" + wrapped_system_name + "</u>";
+    if (has_drydock)
         wrapped_system_name = "<u>" + wrapped_system_name + "</u>";
     std::shared_ptr<GG::Font> font;
     if (capital)
