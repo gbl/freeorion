@@ -30,22 +30,31 @@ namespace {
         SpecialsListHeader(GG::X left, GG::Y top, GG::X w, GG::Y h, bool level1, std::string text): 
             Control(left, top, w, h, GG::NO_WND_FLAGS),
             m_level1(level1),
-            m_header_text(UserString(text))
+            m_header_text(text)
         {}
 
         void CompleteConstruction() override {
             GG::Control::CompleteConstruction();
             SetChildClippingMode(ClipToClient);     // line wrap here ?? 
-            m_header = GG::Wnd::Create<CUILabel>(m_header_text, GG::FORMAT_LEFT);   // bold?
-            if (m_level1)
+            m_header = GG::Wnd::Create<CUILabel>(UserString(m_header_text), GG::FORMAT_LEFT);   // bold?
+            if (m_level1) {
                 m_header->SetFont(ClientUI::GetBoldFont());
-            else
+            }
+            else {
                 m_header->SetFont(ClientUI::GetBoldFont());
-            GG::Pt size = m_header->MinUsableSize(Width()); // @TODO max(., outside with)
+		m_icon = GG::Wnd::Create<StatisticIcon>(ClientUI::SpecialIcon(
+			m_header_text), GG::X(20), GG::Y(20));
+	    }
+            GG::Pt size = m_header->MinUsableSize(Width());
             size.x = Width();
             // std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
-            m_header->Resize(size);
             Resize(size);
+	    if (m_icon) {
+	        AttachChild(m_icon);
+		m_header->SizeMove(GG::Pt(GG::X(25), GG::Y0), GG::Pt(Width()-25, Height()));
+	    } else {
+                m_header->Resize(size);
+	    }
             AttachChild(m_header);
             DoLayout();
         }
@@ -71,6 +80,7 @@ namespace {
         private:
             bool m_level1;
             std::string m_header_text;
+	    std::shared_ptr<StatisticIcon> m_icon;
             std::shared_ptr<GG::Label>               m_header;
             
         void DoLayout() {
@@ -132,25 +142,25 @@ namespace {
             m_p1(nullptr), m_p2(nullptr), m_p3(nullptr),
             m_v1(nullptr), m_v2(nullptr), m_v3(nullptr)
         {
-            SetName("SpecialsListRow");
+            SetName("SpecialsListPanel");
             SetChildClippingMode(ClipToClient);
         }
 
-		void ConstructEntry(int& y, std::shared_ptr<SpecialsListHeader> &head,
-			std::shared_ptr<LinkText> &body, std::string &special) {
-			if (special.empty()) return;
-			y+=25;
-			// std::cout << "creating line for " << special << " at y=" << y << std::endl;
-			head = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), false, special);
-			AttachChild(head);
-			y+=25;
-			body = GG::Wnd::Create<LinkText>(GG::X0, GG::Y(y), Width(), special,
-				ClientUI::GetFont(),
-				GG::FORMAT_LEFT | GG::FORMAT_VCENTER | GG::FORMAT_WORDBREAK, ClientUI::TextColor());
-			body -> SetDecorator(VarText::PLANET_ID_TAG, new ColorPlanet(m_focustype));
-			body -> LinkClickedSignal.connect(&HandleLinkClick);
-			AttachChild(body);
-		}
+        void ConstructEntry(int& y, std::shared_ptr<SpecialsListHeader> &head,
+            std::shared_ptr<LinkText> &body, std::string &special) {
+            if (special.empty()) return;
+            y+=25;
+            // std::cout << "creating line for " << special << " at y=" << y << std::endl;
+            head = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), false, special);
+            AttachChild(head);
+            y+=25;
+            body = GG::Wnd::Create<LinkText>(GG::X0, GG::Y(y), Width(), special,
+                ClientUI::GetFont(),
+                GG::FORMAT_LEFT | GG::FORMAT_VCENTER | GG::FORMAT_WORDBREAK, ClientUI::TextColor());
+            body -> SetDecorator(VarText::PLANET_ID_TAG, new ColorPlanet(m_focustype));
+            body -> LinkClickedSignal.connect(&HandleLinkClick);
+            AttachChild(body);
+        }
 
         void CompleteConstruction() override {
             int y = 0;
@@ -158,9 +168,9 @@ namespace {
             SetChildClippingMode(ClipToClient);
             m_ptext = GG::Wnd::Create<SpecialsListHeader>(GG::X0, GG::Y(y), Width(), GG::Y(25), true, m_text);
             AttachChild(m_ptext);
-			ConstructEntry(y, m_p1, m_v1, m_spec1);
-			ConstructEntry(y, m_p2, m_v2, m_spec2);
-			ConstructEntry(y, m_p3, m_v3, m_spec3);
+            ConstructEntry(y, m_p1, m_v1, m_spec1);
+            ConstructEntry(y, m_p2, m_v2, m_spec2);
+            ConstructEntry(y, m_p3, m_v3, m_spec3);
             Update();
         }
 
@@ -218,9 +228,9 @@ namespace {
 						}
                         if (last_planet_size != planet->Size()) {
                             char letter = UserString(boost::lexical_cast<std::string>(planet->Size())).at(0);
-                            planetlist += "<i>";
+                            planetlist += "<rgba 255 0 0 255>";
                             planetlist += letter;
-                            planetlist += ":</i> ";
+                            planetlist += ":</rgba> ";
                             last_planet_size = planet->Size();
                         }
 						planetlist += "%planet:"+varname+"%";
@@ -246,6 +256,7 @@ namespace {
             GG::Pt lt (GG::X0, GG::Y(y));
             GG::Pt size = control->MinUsableSize(Width());
             size.x = Width();
+	    size.y += 3;	// make sure we can show the underline
             GG::Pt rb(lt + size);
             // std::cout << "doSingleLayout moving text to " << lt << " / " << rb << std::endl;
             control->SizeMove(lt, rb);
@@ -275,7 +286,7 @@ namespace {
                 int neededHeight = DoLayout();
                 GG::Pt newSize = GG::Pt(Width(), GG::Y(neededHeight));
                 // why does this work in SitRepPanel:324 but not here?
-                std::cout << "resizing panel to " << newSize << std::endl;
+                // std::cout << "resizing panel to " << newSize << std::endl;
                 GG::Control::SizeMove(ul, ul+newSize);
             }
         }
@@ -322,9 +333,13 @@ namespace {
         void SizeMove(const GG::Pt& ul, const GG::Pt& lr) override {
             const GG::Pt old_size = Size();
             GG::ListBox::Row::SizeMove(ul, lr);
-            //std::cout << "SpecialsRow::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
-            if (!empty() && old_size != Size() && m_panel)
-                m_panel->Resize(Size());
+            // std::cout << "SpecialsRow::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
+            if (!empty() && old_size != Size() && m_panel) {
+		// std::cout << "panel size : " << m_panel->Size() << std::endl;
+		GG::Pt size = m_panel->Size();
+		size.x = Width();
+		Resize(size);
+	    }
         }
     private:
         std::shared_ptr<SpecialsListPanel>    m_panel;
@@ -351,6 +366,7 @@ public:
         const GG::Pt old_size = Size();
         CUIListBox::SizeMove(ul, lr);
         //std::cout << "SpecialsListBox::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
+	/* GBL remove this, rows know their own size */
         if (old_size != Size()) {
             const GG::Pt row_size = ListRowSize();
             //std::cout << "SpecialsListBox::SizeMove list row size: (" << Value(row_size.x) << ", " << Value(row_size.y) << ")" << std::endl;
@@ -416,8 +432,7 @@ void SpecialsListWnd::Refresh() {
     m_specials_list->Insert(lithic_row);
     m_specials_list->Insert(robotic_row);
     m_specials_list->Insert(compmoon_row);
-
-    // ?? needed? player_row->Resize(row_size);
+    // TODO GBL adjust heights like in later SizeMoves
 }
 
 void SpecialsListWnd::Clear() {
