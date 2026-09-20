@@ -2155,9 +2155,9 @@ X Font::StoreGlyph(const Pt& pt, const Glyph& glyph, const Font::RenderState* re
         StoreGlyphImpl(cache, CLR_BLACK, pt + Pt(X0, -Y1), glyph, italic_top_offset, super_sub_offset);
         if (render_state && render_state->draw_underline) {
             StoreUnderlineImpl(cache, CLR_BLACK, pt + Pt(X0, Y1), glyph, m_descent,
-                               m_height, Y(m_underline_height), Y(m_underline_offset));
+                               m_height, Y(m_underline_height * render_state->draw_underline), Y(m_underline_offset));
             StoreUnderlineImpl(cache, CLR_BLACK, pt + Pt(X0, -Y1), glyph, m_descent,
-                               m_height, Y(m_underline_height), Y(m_underline_offset));
+                               m_height, Y(m_underline_height * render_state->draw_underline), Y(m_underline_offset));
         }
     }
 
@@ -2166,7 +2166,7 @@ X Font::StoreGlyph(const Pt& pt, const Glyph& glyph, const Font::RenderState* re
         StoreGlyphImpl(cache, render_state->CurrentColor(), pt, glyph, italic_top_offset, super_sub_offset);
         if (render_state->draw_underline) {
             StoreUnderlineImpl(cache, render_state->CurrentColor(), pt, glyph, m_descent,
-                               m_height, Y(m_underline_height), Y(m_underline_offset));
+                               m_height, Y(m_underline_height * render_state->draw_underline), Y(m_underline_offset));
         }
     }
 
