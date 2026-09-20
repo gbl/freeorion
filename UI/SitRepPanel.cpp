@@ -423,8 +423,10 @@ void SitRepPanel::CompleteConstruction() {
         boost::bind(&SitRepPanel::LastClicked, this));
     m_filter_button->LeftClickedSignal.connect(
         boost::bind(&SitRepPanel::FilterClicked, this));
+    /* GBL disable this, don't want accidential double clicks to hide stuff
     m_sitreps_lb->DoubleClickedRowSignal.connect(
         boost::bind(&SitRepPanel::IgnoreSitRep, this, _1, _2, _3));
+	*/
     m_sitreps_lb->RightClickedRowSignal.connect(
         boost::bind(&SitRepPanel::DismissalMenu, this, _1, _2, _3));
 
