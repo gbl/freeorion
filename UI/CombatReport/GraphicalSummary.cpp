@@ -87,6 +87,16 @@ namespace {
         db.Add<GG::Clr>("ui.combat.summary.undamaged.color",
                         UserStringNop("OPTIONS_DB_UI_COMBAT_SUMMARY_HEALTH_COLOR"),
                         GG::CLR_GREEN);
+        
+        db.Add<GG::Clr>("ui.combat.summary.deadplanet.color",
+                        UserStringNop("OPTIONS_DB_UI_COMBAT_SUMMARY_DEAD_COLOR"),
+                        GG::Clr(255, 128, 0, 255));
+        db.Add<GG::Clr>("ui.combat.summary.damagedplanet.color",
+                        UserStringNop("OPTIONS_DB_UI_COMBAT_SUMMARY_WOUND_COLOR"),
+                        GG::CLR_YELLOW);
+        db.Add<GG::Clr>("ui.combat.summary.undamagedplanet.color",
+                        UserStringNop("OPTIONS_DB_UI_COMBAT_SUMMARY_HEALTH_COLOR"),
+                        GG::Clr(128, 128, 255, 255));        
     }
     bool temp_bool = RegisterOptions(&AddOptions);
 
@@ -279,9 +289,17 @@ public:
         SetBrowseModeTime(GetOptionsDB().Get<int>("ui.tooltip.delay"));
 
         OptionsDB& options = GetOptionsDB();
-        m_dead_color = options.Get<GG::Clr>("ui.combat.summary.dead.color");
-        m_wound_color = options.Get<GG::Clr>("ui.combat.summary.damaged.color");
-        m_health_color = options.Get<GG::Clr>("ui.combat.summary.undamaged.color");
+        if (GetPlanet(participant.object_id)) {
+            m_dead_color = options.Get<GG::Clr>("ui.combat.summary.deadplanet.color");
+            m_wound_color = options.Get<GG::Clr>("ui.combat.summary.damagedplanet.color");
+            m_health_color = options.Get<GG::Clr>("ui.combat.summary.undamagedplanet.color");
+        } else {
+            m_dead_color = options.Get<GG::Clr>("ui.combat.summary.dead.color");
+            m_wound_color = options.Get<GG::Clr>("ui.combat.summary.damaged.color");
+            m_health_color = options.Get<GG::Clr>("ui.combat.summary.undamaged.color");
+        }
+
+	// TODO improve this, adding blue assumes the color options are unchanged
     }
 
     void Render() override {

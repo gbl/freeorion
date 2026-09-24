@@ -673,6 +673,9 @@ void OptionsWnd::CompleteConstruction() {
     ColorOption(current_page, 0, "ui.combat.summary.dead.color",        UserString("OPTIONS_COMBAT_SUMMARY_DEAD_COLOR"));
     ColorOption(current_page, 0, "ui.combat.summary.damaged.color",     UserString("OPTIONS_COMBAT_SUMMARY_WOUND_COLOR"));
     ColorOption(current_page, 0, "ui.combat.summary.undamaged.color",   UserString("OPTIONS_COMBAT_SUMMARY_HEALTH_COLOR"));
+    ColorOption(current_page, 0, "ui.combat.summary.deadplanet.color",        UserString("OPTIONS_COMBAT_SUMMARY_DEADPLANET_COLOR"));
+    ColorOption(current_page, 0, "ui.combat.summary.damagedplanet.color",     UserString("OPTIONS_COMBAT_SUMMARY_WOUNDPLANET_COLOR"));
+    ColorOption(current_page, 0, "ui.combat.summary.undamagedplanet.color",   UserString("OPTIONS_COMBAT_SUMMARY_HEALTHPLANET_COLOR"));
 
     CreateSectionHeader(current_page, 0,                                            UserString("OPTIONS_TECH_COLORS"));
     CreateSectionHeader(current_page, 1,                                            UserString("OPTIONS_KNOWN_TECH_COLORS"));
