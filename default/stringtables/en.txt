@@ -6596,6 +6596,9 @@ Foreign Fleet Arrived
 SITREP_POP_THRESHOLD
 On %planet%: The colony has reached sufficient size and [[metertype METER_HAPPINESS]] to be a settler source for colonizing other planets.
 
+SITREP_POP_THRESHOLD_SPECIES
+On %planet%: The %species% colony has reached sufficient size and [[metertype METER_HAPPINESS]] to be a settler source for colonizing other planets.
+
 SITREP_POP_THRESHOLD_LABEL
 Colonizing Threshold
 

@@ -80,11 +80,12 @@ Tech
             ]
             effects = [
                 GenerateSitRepMessage
-                    message = "SITREP_POP_THRESHOLD"
+                    message = "SITREP_POP_THRESHOLD_SPECIES"
                     label = "SITREP_POP_THRESHOLD_LABEL"
                     icon = "icons/sitrep/colony_growth.png"
                     parameters = [
                         tag = "planet" data = Target.ID
+                        tag = "species" data = Target.Species
                     ]
                     empire = Source.Owner
                 ]
