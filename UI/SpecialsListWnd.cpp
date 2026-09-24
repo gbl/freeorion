@@ -42,19 +42,21 @@ namespace {
             }
             else {
                 m_header->SetFont(ClientUI::GetBoldFont());
-		m_icon = GG::Wnd::Create<StatisticIcon>(ClientUI::SpecialIcon(
-			m_header_text), GG::X(20), GG::Y(20));
-	    }
+                if (GetSpecial(m_header_text)) {    // at program start specials are not loaded yet ?
+                    m_icon = GG::Wnd::Create<StatisticIcon>(ClientUI::SpecialIcon(
+                        m_header_text), GG::X(20), GG::Y(20));
+                }
+            }
             GG::Pt size = m_header->MinUsableSize(Width());
             size.x = Width();
             // std::cout << "Resizing " << m_header_text << " to " << size << std::endl;
             Resize(size);
-	    if (m_icon) {
-	        AttachChild(m_icon);
-		m_header->SizeMove(GG::Pt(GG::X(25), GG::Y0), GG::Pt(Width()-25, Height()));
-	    } else {
+            if (m_icon) {
+                AttachChild(m_icon);
+                m_header->SizeMove(GG::Pt(GG::X(25), GG::Y0), GG::Pt(Width()-25, Height()));
+            } else {
                 m_header->Resize(size);
-	    }
+            }
             AttachChild(m_header);
             DoLayout();
         }
@@ -256,7 +258,7 @@ namespace {
             GG::Pt lt (GG::X0, GG::Y(y));
             GG::Pt size = control->MinUsableSize(Width());
             size.x = Width();
-	    size.y += 3;	// make sure we can show the underline
+            size.y += 3;	// make sure we can show the underline
             GG::Pt rb(lt + size);
             // std::cout << "doSingleLayout moving text to " << lt << " / " << rb << std::endl;
             control->SizeMove(lt, rb);
@@ -335,11 +337,11 @@ namespace {
             GG::ListBox::Row::SizeMove(ul, lr);
             // std::cout << "SpecialsRow::SizeMove size: (" << Value(Width()) << ", " << Value(Height()) << ")" << std::endl;
             if (!empty() && old_size != Size() && m_panel) {
-		// std::cout << "panel size : " << m_panel->Size() << std::endl;
-		GG::Pt size = m_panel->Size();
-		size.x = Width();
-		Resize(size);
-	    }
+                // std::cout << "panel size : " << m_panel->Size() << std::endl;
+                GG::Pt size = m_panel->Size();
+                size.x = Width();
+                Resize(size);
+            }
         }
     private:
         std::shared_ptr<SpecialsListPanel>    m_panel;
