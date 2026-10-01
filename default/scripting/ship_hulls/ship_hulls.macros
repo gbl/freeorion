@@ -143,12 +143,13 @@ REFUEL_MESSAGE
     ]
     effects = [
         GenerateSitrepMessage
-         message = "EFFECT_SHIP_REFUELED"
+         message = "EFFECT_SHIP_DESIGN_REFUELED"
          label = "EFFECT_SHIP_REFUELED_LABEL"
          icon = "icons/meter/fuel.png"
          parameters = [
             tag = "system" data = Source.SystemID
             tag = "ship" data = Source.ID
+	    tag = "shipdesign" data = Source.DesignID
          ]
          empire = Source.Owner
     ]
