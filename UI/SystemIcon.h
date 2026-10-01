@@ -4,6 +4,9 @@
 #include <GG/GGFwd.h>
 #include <GG/Control.h>
 
+#include "../Empire/Empire.h"
+#include "../universe/Planet.h"
+
 #include <boost/signals2/signal.hpp>
 
 
@@ -33,6 +36,36 @@ public:
     void SizeMove(const GG::Pt& ul, const GG::Pt& lr) override;
 private:
     std::shared_ptr<GG::TextControl> m_text;
+};
+
+class FlagBox : public GG::Control {
+public:
+    FlagBox(int system_id, GG::X width, GG::Y height);
+
+    void addFlag(std::string color);
+    void CompleteConstruction() override;
+
+    // all of the following should really be focs.txt defs
+    // but I don't know enough how to create them currently.
+    bool isTroopShipRecommendedSpecies(const std::string& speciesName);
+    
+    std::string getAttackShipRecommendedSpeciesName();
+    bool isAttackShipRecommendedSpecies(const std::string& speciesName);
+    bool CanProduceColony(std::string species, int planet_id);
+    bool IsAttackShipRecommendedPlanetType(std::shared_ptr<Planet> planet);
+
+    bool isGoodTroopShipSystem();
+    bool isGoodAttackShipSystem();
+    bool isAsteroidBeltSystem();
+    bool hasBuildingsForTroopShips();
+    bool hasBuildingsForAttackShips();
+
+private:
+    int m_system_id;
+    const Empire *m_empire;     //!< player empire so we dont need to get it everywhere
+    GG::X m_width;
+    GG::Y m_height;
+    std::vector<std::shared_ptr<GG::Texture>> m_flags;
 };
 
 /** A control that allows interaction with a star system.  This class allows
@@ -134,7 +167,8 @@ private:
     bool                            m_selected;                 //!< is this icon presently selected / should it show m_selected_indicator
     std::shared_ptr<OwnerColoredSystemName>         m_colored_name;             //!< the control that holds the name of the system
     bool                            m_showing_name;             //!< is the icon supposed to show its name?
-
+    std::shared_ptr<FlagBox>        m_flagbox;
+    
     boost::signals2::connection     m_system_connection;
 };
 

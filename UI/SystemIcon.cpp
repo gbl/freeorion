@@ -270,6 +270,248 @@ void OwnerColoredSystemName::SizeMove(const GG::Pt& ul, const GG::Pt& lr) {
         }
 }
 
+const int FLAGBOX_SIZE_DIVISOR = 15;
+FlagBox::FlagBox(int system_id, GG::X width, GG::Y height) :
+    m_system_id(system_id),
+    m_width(width),
+    m_height(height)
+{
+    int client_empire_id = HumanClientApp::GetApp()->EmpireID();
+    m_empire = GetEmpire(client_empire_id);
+}
+
+void FlagBox::addFlag(std::string color) {
+    m_flags.push_back(ClientUI::GetClientUI()->GetTexture(
+        ClientUI::ArtDir() / "stars" / ("waving_flag_"+color+".png"))
+    );
+}
+
+bool FlagBox::isTroopShipRecommendedSpecies(const std::string& speciesName) {
+    return (speciesName == "SP_UGMORS" || speciesName == "SP_EGASSEM");
+}
+
+std::string FlagBox::getAttackShipRecommendedSpeciesName() {
+    if (m_empire->BuildingTypeAvailable("BLD_COL_MISIORLA")) { return "SP_MISIORLA"; }
+    if (m_empire->BuildingTypeAvailable("BLD_COL_MUURSH")) { return "SP_MUURSH"; }
+    // add some player only species here that have +X pilots? Which?
+    if (m_empire->BuildingTypeAvailable("BLD_COL_HHHOH")) { return "SP_HHHOH"; }
+    return "";
+}
+
+bool FlagBox::isAttackShipRecommendedSpecies(const std::string& speciesName) {
+    // Don't use "==...Name()" here so we can return true one more than one
+    if (speciesName == "SP_MISIORLA") { return true; }
+    if (m_empire->BuildingTypeAvailable("BLD_COL_MISIORLA")) { return false; }
+    if (speciesName == "SP_MUURSH") { return true; }
+    // more species here
+    if (m_empire->BuildingTypeAvailable("BLD_COL_MUURSH")
+    ||  m_empire->BuildingTypeAvailable("BLD_COL_MUURSH") /* more here */       )
+        return false;
+
+    if (speciesName == "SP_HHHOH") { return true; }
+
+    return false;
+}
+
+namespace FlagBoxCache {
+    int last_updated_turn;
+    bool player_has_misiorla;
+    bool player_has_muursh;
+    bool player_has_hhhoh;
+    
+    void update_player_available_races(const Empire *empire) {
+        if (last_updated_turn == CurrentTurn())
+            return;
+        last_updated_turn = CurrentTurn();
+        player_has_misiorla = player_has_muursh = player_has_hhhoh = false;
+        bool player_has_xenolab = false;
+        bool player_has_misiorlaremains = false;
+        auto systems = empire->ExploredSystems();
+        for (int systemid: systems) {
+            auto system = GetSystem(systemid);
+            auto planetids = system->PlanetIDs();
+            for (int planetid: planetids) {
+                auto planet = GetPlanet(planetid);
+                if (!planet)
+                    continue;
+                if (planet->Owner() != empire->EmpireID())
+                    continue;
+                if (planet->SpeciesName() == "SP_MISIORLA")
+                    player_has_misiorla = true;
+                if (planet->SpeciesName() == "SP_MUURSH")
+                    player_has_muursh = true;
+                if (planet->SpeciesName() == "SP_HHHOH")
+                    player_has_hhhoh = true;
+                if (!player_has_xenolab) {
+                    auto buildingids = planet->BuildingIDs();
+                    for (int buildingid: buildingids) {
+                        if (GetBuilding(buildingid)->BuildingTypeName() == "BLD_XENORESURRECTION_LAB") {
+                            player_has_xenolab = true;
+                            break;
+                        }
+                    }
+                }
+                if (!player_has_misiorla && !player_has_misiorlaremains) {
+                    auto specials = planet->Specials();
+                    if (specials.count("EXTINCT_MISIORLA_SPECIAL") > 0) {
+                        player_has_misiorlaremains = true;
+                        break;
+                    }
+                }
+                if (player_has_misiorlaremains && player_has_xenolab) {
+                    player_has_misiorla = true;
+                }
+                if (player_has_misiorla && player_has_muursh && player_has_hhhoh) {
+                    std::cout << "Turn " << last_updated_turn << " Shortcut have all races " << std::endl;
+                    return;
+                }
+            }
+        }
+        std::cout << "Turn " << last_updated_turn << ":" << player_has_misiorla
+                << ", " << player_has_muursh << ", " << player_has_hhhoh << std::endl;
+    }
+    
+    bool CanProduceHhhohColony(const Empire *empire) {
+        update_player_available_races(empire);
+        return player_has_hhhoh;
+    }
+    bool CanProduceMuurshColony(const Empire *empire) {
+        update_player_available_races(empire);
+        return player_has_muursh;
+    }
+    bool CanProduceMisiorlaColony(const Empire *empire) {
+        update_player_available_races(empire);
+        return player_has_misiorla;
+    }
+}
+
+bool FlagBox::IsAttackShipRecommendedPlanetType(std::shared_ptr<Planet> planet) {
+    if (FlagBoxCache::CanProduceMisiorlaColony(m_empire)) {
+        return planet->Type() == PT_TOXIC;
+    }
+    if (FlagBoxCache::CanProduceMuurshColony(m_empire)) {
+        return planet->Type() == PT_DESERT;
+    }
+    if (FlagBoxCache::CanProduceHhhohColony(m_empire)) {
+        return planet->Type() == PT_TUNDRA;
+    }
+    return false;
+}
+
+
+/**
+ * Return true iff the system has a planet that's inhabited by ugmors
+ * or egassem, has an energy compressor, or has a drydock on a planet
+ * that can't build an energy compressor (because it's not a blue/white
+ * star or energy compressor hasn't been researched yet)
+ */
+bool FlagBox::hasBuildingsForTroopShips() {
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    auto planetids = system->PlanetIDs();
+    for (int planetid: planetids) {
+        auto planet = GetPlanet(planetid);
+        if (!planet)
+            continue;
+        if (!isTroopShipRecommendedSpecies(planet->SpeciesName()))
+            continue;
+        auto buildingids = planet->BuildingIDs();
+        for (int buildingid: buildingids) {
+            auto building = GetBuilding(buildingid);
+            if (building->BuildingTypeName() == "BLD_SHIPYARD_ENRG_COMP")
+                return true;
+            if (system->GetStarType() != STAR_BLUE 
+            &&  system->GetStarType() != STAR_WHITE
+                    && building->BuildingTypeName() == "BLD_SHIPYARD_ORBITAL_DRYDOCK")
+                return true;
+            if (m_empire->ResearchedTechs().count("SHP_FRC_ENRG_COMP") == 0
+                    && building->BuildingTypeName() == "BLD_SHIPYARD_ORBITAL_DRYDOCK")
+                return true;
+        }
+    }
+    return false;
+}
+
+bool FlagBox::isGoodTroopShipSystem() {
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    auto planetids = system->PlanetIDs();
+    for (int planetid: planetids) {
+        auto planet = GetPlanet(planetid);
+        if (!planet)
+            continue;
+        if (planet->Type() != PT_INFERNO)
+            continue;
+        if (m_empire->ResearchedTechs().count("SHP_FRC_ENRG_COMP") == 0)
+            return true;
+        else if (system->GetStarType() == STAR_BLUE || system->GetStarType() == STAR_WHITE)
+            return true;
+    }
+    return false;
+}
+
+bool FlagBox::isAsteroidBeltSystem() {
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    auto planetids = system->PlanetIDs();
+    for (int planetid: planetids) {
+        auto planet = GetPlanet(planetid);
+        if (!planet)
+            continue;
+        if (planet->Type() == PT_ASTEROIDS)
+            return true;
+    }
+    return false;
+}
+
+bool FlagBox::isGoodAttackShipSystem() {
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    auto planetids = system->PlanetIDs();
+    for (int planetid: planetids) {
+        auto planet = GetPlanet(planetid);
+        if (!planet)
+            continue;
+        if (IsAttackShipRecommendedPlanetType(planet)) {
+            std::cout << "\t" << planet->Name() << " recom: yes" << std::endl;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FlagBox::hasBuildingsForAttackShips() {
+    return false;
+}
+
+void FlagBox::CompleteConstruction() {
+    std::vector<std::shared_ptr<GG::Texture>> icons;
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    if ((!system) || system->Name().empty())
+        return;
+
+    if (hasBuildingsForTroopShips())    { addFlag("red"); }
+    else if (isGoodTroopShipSystem())   { addFlag("orange"); }
+    
+    if (hasBuildingsForAttackShips())   { addFlag("blue"); }
+    else if (isGoodAttackShipSystem())  { addFlag("lightblue"); }
+    
+    if (isAsteroidBeltSystem())         { addFlag("green"); }
+    
+    GG::X w(m_width * 10 / FLAGBOX_SIZE_DIVISOR);
+    GG::Y h(m_height * 10 / FLAGBOX_SIZE_DIVISOR);
+    GG::Pt ul(GG::X0, GG::Y0);
+    GG::Pt lr(w, h);
+    GG::Pt delta(w, GG::Y0);
+    for (auto flag: m_flags) {
+        auto child = GG::Wnd::Create<GG::StaticGraphic>(flag, GG::GRAPHIC_FITGRAPHIC | GG::GRAPHIC_PROPSCALE);
+        child->SizeMove(ul, lr);
+        ul += delta;
+        lr += delta;
+        AttachChild(child);
+    }
+    delta = GG::Pt(m_width/2, m_height/2);
+    delta -= GG::Pt(lr.x / 2, GG::Y0 + lr.y / 2);
+    SizeMove(delta, lr+delta);
+}
+
+
 ////////////////////////////////////////////////
 // SystemIcon
 ////////////////////////////////////////////////
@@ -284,7 +526,8 @@ SystemIcon::SystemIcon(GG::X x, GG::Y y, GG::X w, int system_id) :
     m_tiny_mouseover_indicator(nullptr),
     m_selected(false),
     m_colored_name(nullptr),
-    m_showing_name(false)
+    m_showing_name(false),
+    m_flagbox(nullptr)
 {}
 
 void SystemIcon::CompleteConstruction() {
@@ -706,6 +949,10 @@ void SystemIcon::Refresh() {
         if (m_showing_name)
             AttachChild(m_colored_name);
     }
+    
+    DetachChildAndReset(m_flagbox);
+    m_flagbox = GG::Wnd::Create<FlagBox>(m_system_id, Width(), Height());
+    AttachChild(m_flagbox);
 
     if (system && !system->OverlayTexture().empty())
         m_overlay_texture = ClientUI::GetTexture(ClientUI::ArtDir() / system->OverlayTexture());
