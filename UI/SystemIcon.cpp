@@ -293,7 +293,7 @@ bool FlagBox::isTroopShipRecommendedSpecies(const std::string& speciesName) {
 std::string FlagBox::getAttackShipRecommendedSpeciesName() {
     if (m_empire->BuildingTypeAvailable("BLD_COL_MISIORLA")) { return "SP_MISIORLA"; }
     if (m_empire->BuildingTypeAvailable("BLD_COL_MUURSH")) { return "SP_MUURSH"; }
-    // add some player only species here that have +X pilots? Which?
+    // add some player only species here that have +X pilots? Which? Eaxaw, and ?
     if (m_empire->BuildingTypeAvailable("BLD_COL_HHHOH")) { return "SP_HHHOH"; }
     return "";
 }
@@ -315,15 +315,12 @@ bool FlagBox::isAttackShipRecommendedSpecies(const std::string& speciesName) {
 
 namespace FlagBoxCache {
     int last_updated_turn;
-    bool player_has_misiorla;
-    bool player_has_muursh;
-    bool player_has_hhhoh;
+    std::set<std::string> player_has_species;
     
     void update_player_available_races(const Empire *empire) {
         if (last_updated_turn == CurrentTurn())
             return;
         last_updated_turn = CurrentTurn();
-        player_has_misiorla = player_has_muursh = player_has_hhhoh = false;
         bool player_has_xenolab = false;
         bool player_has_misiorlaremains = false;
         auto systems = empire->ExploredSystems();
@@ -336,13 +333,11 @@ namespace FlagBoxCache {
                     continue;
                 if (planet->Owner() != empire->EmpireID())
                     continue;
-                if (planet->SpeciesName() == "SP_MISIORLA")
-                    player_has_misiorla = true;
-                if (planet->SpeciesName() == "SP_MUURSH")
-                    player_has_muursh = true;
-                if (planet->SpeciesName() == "SP_HHHOH")
-                    player_has_hhhoh = true;
-                if (!player_has_xenolab) {
+                if (!planet->SpeciesName().empty()) {
+                    player_has_species.insert(planet->SpeciesName());
+                }
+                if (!player_has_species.count("SP_MISIORLA")) {
+                    player_has_xenolab = player_has_misiorlaremains = false;
                     auto buildingids = planet->BuildingIDs();
                     for (int buildingid: buildingids) {
                         if (GetBuilding(buildingid)->BuildingTypeName() == "BLD_XENORESURRECTION_LAB") {
@@ -350,8 +345,6 @@ namespace FlagBoxCache {
                             break;
                         }
                     }
-                }
-                if (!player_has_misiorla && !player_has_misiorlaremains) {
                     auto specials = planet->Specials();
                     if (specials.count("EXTINCT_MISIORLA_SPECIAL") > 0) {
                         player_has_misiorlaremains = true;
@@ -359,45 +352,12 @@ namespace FlagBoxCache {
                     }
                 }
                 if (player_has_misiorlaremains && player_has_xenolab) {
-                    player_has_misiorla = true;
-                }
-                if (player_has_misiorla && player_has_muursh && player_has_hhhoh) {
-                    std::cout << "Turn " << last_updated_turn << " Shortcut have all races " << std::endl;
-                    return;
+                    player_has_species.insert("SP_MISIORLA");
                 }
             }
         }
-        std::cout << "Turn " << last_updated_turn << ":" << player_has_misiorla
-                << ", " << player_has_muursh << ", " << player_has_hhhoh << std::endl;
-    }
-    
-    bool CanProduceHhhohColony(const Empire *empire) {
-        update_player_available_races(empire);
-        return player_has_hhhoh;
-    }
-    bool CanProduceMuurshColony(const Empire *empire) {
-        update_player_available_races(empire);
-        return player_has_muursh;
-    }
-    bool CanProduceMisiorlaColony(const Empire *empire) {
-        update_player_available_races(empire);
-        return player_has_misiorla;
     }
 }
-
-bool FlagBox::IsAttackShipRecommendedPlanetType(std::shared_ptr<Planet> planet) {
-    if (FlagBoxCache::CanProduceMisiorlaColony(m_empire)) {
-        return planet->Type() == PT_TOXIC;
-    }
-    if (FlagBoxCache::CanProduceMuurshColony(m_empire)) {
-        return planet->Type() == PT_DESERT;
-    }
-    if (FlagBoxCache::CanProduceHhhohColony(m_empire)) {
-        return planet->Type() == PT_TUNDRA;
-    }
-    return false;
-}
-
 
 /**
  * Return true iff the system has a planet that's inhabited by ugmors
@@ -461,16 +421,43 @@ bool FlagBox::isAsteroidBeltSystem() {
     return false;
 }
 
+struct attack_planet {
+    PlanetType type;
+    std::string species;
+    bool try_next_on_fail;
+} good_attack_ship_planets[] = {
+    { PT_TOXIC, "SP_MISIORLA", false },
+    { PT_TERRAN, "SP_EAXAW", true },
+    { PT_DESERT, "SP_MUURSH", false },
+    { PT_TUNDRA, "SP_HHHOH", true },
+    { PT_TUNDRA, "SP_ETTY", false },
+    { INVALID_PLANET_TYPE },
+};
+
 bool FlagBox::isGoodAttackShipSystem() {
     std::shared_ptr<System> system = GetSystem(m_system_id);
+    FlagBoxCache::update_player_available_races(m_empire);
     auto planetids = system->PlanetIDs();
     for (int planetid: planetids) {
         auto planet = GetPlanet(planetid);
         if (!planet)
             continue;
-        if (IsAttackShipRecommendedPlanetType(planet)) {
-            std::cout << "\t" << planet->Name() << " recom: yes" << std::endl;
-            return true;
+        for (int i=0; good_attack_ship_planets[i].type != INVALID_PLANET_TYPE; i++) {
+            // find the first species that we can actually build
+            if (FlagBoxCache::player_has_species.count(good_attack_ship_planets[i].species)) {
+                // if we can build the species here, or have it built: success
+                if (planet->Type() == good_attack_ship_planets[i].type) {
+                    if (planet->SpeciesName().empty())
+                        return true; // uncolonized, can be colonized with proper species
+                    if (planet->SpeciesName() == good_attack_ship_planets[i].species) 
+                        return true; // colonized with proper species
+                }
+                // if we can't build it, but the next species is just as good, try it
+                if (good_attack_ship_planets[i].try_next_on_fail)
+                    continue;
+                // else try next planet. Not next species.
+                break;
+            }
         }
     }
     return false;
