@@ -185,13 +185,23 @@ namespace {
 
         void    FillPlanets(std::shared_ptr<LinkText> widget, std::string& spectype) {
             // std::cout << "Filling Planets with special " << spectype << " and focus " << m_focustype << std::endl;
-			int client_empire_id = HumanClientApp::GetApp()->EmpireID();
-			const std::set<int> objectids = GetUniverse().EmpireVisibleObjectIDs(client_empire_id);
-			std::string planetlist = "";
+
+            std::string planetlist = "";
             VarText vartext(planetlist, false);
             int foundplanets = 0;
             PlanetSize last_planet_size = INVALID_PLANET_SIZE;
 
+			int client_empire_id = HumanClientApp::GetApp()->EmpireID();
+            /*
+			std::set<int> objectids = GetUniverse().EmpireVisibleObjectIDs(client_empire_id);
+            std::set<int> stale = GetUniverse().EmpireStaleKnowledgeObjectIDs(client_empire_id);
+            objectids.insert(stale.begin(), stale.end());
+			*/
+            std::set<int> objectids;
+            auto objects = EmpireKnownObjects(client_empire_id);
+            for (auto object: objects) {
+                objectids.insert(object->ID());
+            }
             std::vector<int> planets_by_size;
             std::copy_if(objectids.begin(), objectids.end(),
                 std::inserter(planets_by_size, planets_by_size.end()),
