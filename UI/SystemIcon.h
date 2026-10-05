@@ -58,7 +58,10 @@ public:
     bool isGoodAttackShipSystem();
     bool isAsteroidBeltSystem();
     bool hasBuildingsForTroopShips();
-    bool hasBuildingsForAttackShips();
+    // This one has int, not bool, so we can differentiate between "has all" (2),
+    // "could have all if we build one more" (1) which is important if we just
+    // researched a tech, and "Doesn't even have shipyard + drydock" (0).
+    int hasBuildingsForAttackShips();
 
 private:
     int m_system_id;

@@ -442,9 +442,11 @@ bool FlagBox::isGoodAttackShipSystem() {
         auto planet = GetPlanet(planetid);
         if (!planet)
             continue;
+        bool any_species_matched = false;
         for (int i=0; good_attack_ship_planets[i].type != INVALID_PLANET_TYPE; i++) {
             // find the first species that we can actually build
             if (FlagBoxCache::player_has_species.count(good_attack_ship_planets[i].species)) {
+                any_species_matched = true;
                 // if we can build the species here, or have it built: success
                 if (planet->Type() == good_attack_ship_planets[i].type) {
                     if (planet->SpeciesName().empty())
@@ -453,18 +455,64 @@ bool FlagBox::isGoodAttackShipSystem() {
                         return true; // colonized with proper species
                 }
                 // if we can't build it, but the next species is just as good, try it
-                if (good_attack_ship_planets[i].try_next_on_fail)
-                    continue;
-                // else try next planet. Not next species.
-                break;
             }
+            if (any_species_matched && !good_attack_ship_planets[i].try_next_on_fail)
+                break;
         }
     }
     return false;
 }
 
-bool FlagBox::hasBuildingsForAttackShips() {
-    return false;
+int FlagBox::hasBuildingsForAttackShips() {
+    std::shared_ptr<System> system = GetSystem(m_system_id);
+    FlagBoxCache::update_player_available_races(m_empire);
+    int best_in_this_system = 0;
+    auto planetids = system->PlanetIDs();
+    for (int planetid: planetids) {
+        auto planet = GetPlanet(planetid);
+        if (!planet)
+            continue;
+        bool skip_to_worse = true;
+        for (int i=0; good_attack_ship_planets[i].type != INVALID_PLANET_TYPE; i++) {
+            // find the first species that we can actually build
+            if (!FlagBoxCache::player_has_species.count(good_attack_ship_planets[i].species))
+                continue;
+            skip_to_worse = false;
+            if (planet->SpeciesName() == good_attack_ship_planets[i].species) {
+                auto buildingids = planet->BuildingIDs();
+                bool have_sy=false, have_od=false,
+                     have_geo = false, have_nano = false, have_adv = false, have_neut = false;
+                bool need_geo = false, need_nano = false, need_adv = false, need_neut = false;
+                for (int buildingid: buildingids) {
+                    auto building = GetBuilding(buildingid);
+                    if (building->BuildingTypeName() == "BLD_SHIPYARD_BASE") have_sy = true;
+                    if (building->BuildingTypeName() == "BLD_SHIPYARD_ORBITAL_DRYDOCK") have_od = true;
+                    if (building->BuildingTypeName() == "BLD_SHIPYARD_CON_GEOINT") have_geo = true;
+                    if (building->BuildingTypeName() == "BLD_SHIPYARD_CON_NANOROBO") have_nano = true;
+                    if (building->BuildingTypeName() == "BLD_SHIPYARD_CON_ADV_ENGINE") have_adv = true;
+                    if (building->BuildingTypeName() == "BLD_NEUTRONIUM_FORGE") have_neut = true;
+                }
+                need_geo  = (m_empire->ResearchedTechs().count("SHP_CONTGRAV_MAINT") != 0);
+                need_nano = (m_empire->ResearchedTechs().count("SHP_NANOROBO_MAINT") != 0);
+                need_adv  = (m_empire->ResearchedTechs().count("SHP_TRANSSPACE_DRIVE") != 0);
+                need_neut = (m_empire->ResearchedTechs().count("PRO_NEUTRONIUM_EXTRACTION") != 0);
+
+                int havecount = have_sy + have_od + have_geo + have_nano + have_adv + have_neut;
+                int needcount = need_geo + need_nano + need_adv + need_neut;
+                if (havecount > best_in_this_system) 
+                    best_in_this_system = havecount;
+                if (best_in_this_system - needcount >= 2) {
+                    // the planet has everything we could wish for
+                    return 2;
+                }
+            }
+            if (good_attack_ship_planets[i].try_next_on_fail || skip_to_worse)
+                continue;       // next species same planet
+            break;              // next planet
+        }
+    }
+    if (best_in_this_system >= 2) { return 1; };
+    return 0;
 }
 
 void FlagBox::CompleteConstruction() {
@@ -474,10 +522,12 @@ void FlagBox::CompleteConstruction() {
         return;
 
     if (hasBuildingsForTroopShips())    { addFlag("red"); }
-    else if (isGoodTroopShipSystem())   { addFlag("orange"); }
+    else if (isGoodTroopShipSystem())   { addFlag("lightred"); }
     
-    if (hasBuildingsForAttackShips())   { addFlag("blue"); }
-    else if (isGoodAttackShipSystem())  { addFlag("lightblue"); }
+    int hbfas = hasBuildingsForAttackShips();
+    if (hbfas == 2)                     { addFlag("brown"); }
+    else if (hbfas)                     { addFlag("gold"); }
+    else if (isGoodAttackShipSystem())  { addFlag("yellow"); }
     
     if (isAsteroidBeltSystem())         { addFlag("green"); }
     
