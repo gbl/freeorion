@@ -322,8 +322,6 @@ namespace FlagBoxCache {
             return;
         player_has_species.clear();     // need to clear so after losing a species or loading a game we don't have unavailable species in the set
         last_updated_turn = CurrentTurn();
-        bool player_has_xenolab = false;
-        bool player_has_misiorlaremains = false;
         auto systems = empire->ExploredSystems();
         for (int systemid: systems) {
             auto system = GetSystem(systemid);
@@ -337,24 +335,10 @@ namespace FlagBoxCache {
                 if (!planet->SpeciesName().empty()) {
                     player_has_species.insert(planet->SpeciesName());
                 }
-                if (!player_has_species.count("SP_MISIORLA")) {
-                    player_has_xenolab = player_has_misiorlaremains = false;
-                    auto buildingids = planet->BuildingIDs();
-                    for (int buildingid: buildingids) {
-                        if (GetBuilding(buildingid)->BuildingTypeName() == "BLD_XENORESURRECTION_LAB") {
-                            player_has_xenolab = true;
-                            break;
-                        }
-                    }
-                    auto specials = planet->Specials();
-                    if (specials.count("EXTINCT_MISIORLA_SPECIAL") > 0) {
-                        player_has_misiorlaremains = true;
-                    }
-                }
-                if (player_has_misiorlaremains && player_has_xenolab) {
-                    player_has_species.insert("SP_MISIORLA");
-                }
             }
+        }
+        if (empire->TechResearched("TECH_COL_MISIORLA")) {
+            player_has_species.insert("SP_MISIORLA");
         }
     }
 }
