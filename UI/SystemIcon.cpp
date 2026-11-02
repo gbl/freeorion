@@ -320,6 +320,7 @@ namespace FlagBoxCache {
     void update_player_available_races(const Empire *empire) {
         if (last_updated_turn == CurrentTurn())
             return;
+        player_has_species.clear();     // need to clear so after losing a species or loading a game we don't have unavailable species in the set
         last_updated_turn = CurrentTurn();
         bool player_has_xenolab = false;
         bool player_has_misiorlaremains = false;
@@ -348,7 +349,6 @@ namespace FlagBoxCache {
                     auto specials = planet->Specials();
                     if (specials.count("EXTINCT_MISIORLA_SPECIAL") > 0) {
                         player_has_misiorlaremains = true;
-                        break;
                     }
                 }
                 if (player_has_misiorlaremains && player_has_xenolab) {
