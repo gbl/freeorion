@@ -121,6 +121,8 @@ namespace {
                 { return UserString(data); }},
             {VarText::RAW_TEXT_TAG, [](const std::string& data) -> boost::optional<std::string>
                 { return data; }},
+            {VarText::COUNT_TAG, [](const std::string& data) -> boost::optional<std::string>
+                { return data; }},
             {VarText::PLANET_ID_TAG, [](const std::string& data)
                 { return UniverseObjectString(data, VarText::PLANET_ID_TAG); }},
             {VarText::SYSTEM_ID_TAG, [](const std::string& data)
@@ -205,6 +207,7 @@ namespace {
 // static(s)
 const std::string VarText::TEXT_TAG = "text";
 const std::string VarText::RAW_TEXT_TAG = "rawtext";
+const std::string VarText::COUNT_TAG = "count";
 
 const std::string VarText::PLANET_ID_TAG = "planet";
 const std::string VarText::SYSTEM_ID_TAG = "system";
@@ -252,7 +255,7 @@ bool VarText::Validate() const {
 
 void VarText::SetTemplateString(const std::string& text, bool stringtable_lookup_template/* = true*/) {
     m_template_string = text;
-    m_text = "";
+    m_text.clear();
     m_stringtable_lookup_flag = stringtable_lookup_template;
 }
 

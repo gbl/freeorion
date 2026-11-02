@@ -6428,11 +6428,17 @@ Object Destroyed
 SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM
 At %system%: a %shipdesign% (the %empire% ship '%ship%') was destroyed.
 
+SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM_MULTI
+At %system%: %count% of your %shipdesign% (%empire%) were destroyed.
+
 SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM_LABEL
 Own Ship Destroyed
 
 SITREP_SHIP_DESTROYED_AT_SYSTEM
 At %system%: a %shipdesign% (the %empire% ship '%ship%') was destroyed.
+
+SITREP_SHIP_DESTROYED_AT_SYSTEM_MULTI
+At %system%: %count% %shipdesign% of %empire% were destroyed.
 
 SITREP_SHIP_DESTROYED_AT_SYSTEM_LABEL
 Empire Ship Destroyed
@@ -6487,6 +6493,9 @@ Object Damaged
 
 SITREP_SHIP_DAMAGED_AT_SYSTEM
 At %system%: a %empire% %shipdesign%, the '%ship%', was damaged.
+
+SITREP_SHIP_DAMAGED_AT_SYSTEM_MULTI
+At %system%: %count% %empire% %shipdesign%s were damaged.
 
 SITREP_SHIP_DAMAGED_AT_SYSTEM_LABEL
 Empire Ship Damaged
@@ -6695,14 +6704,26 @@ Orbital Drydock Repairs - Complete
 EFFECT_DRYDOCK_SHIP_REPAIR_NONE
 On %planet%: The %building% could not start repairs on %ship%, due to low [[metertype METER_HAPPINESS]].
 
+EFFECT_DRYDOCK_SHIP_REPAIR_NONE_MULTI
+On %planet%: The %building% could not start repairs on %count% ships, due to low [[metertype METER_HAPPINESS]].
+
 EFFECT_DRYDOCK_SHIP_REPAIR_NOPOP
 On %planet%: the %building% is abandoned, there is no one left to assist in repairs of the ship %ship%.
+
+EFFECT_DRYDOCK_SHIP_REPAIR_NOPOP_MULTI
+On %planet%: the %building% is abandoned, there is no one left to assist in repairs of %count% ships.
 
 EFFECT_DRYDOCK_SHIP_REPAIR_PARTIAL
 On %planet%: the %building% performed partial repairs on the %ship%.
 
+EFFECT_DRYDOCK_SHIP_REPAIR_PARTIAL_MULTI
+On %planet%: the %building% performed partial repairs on %count% ships.
+
 EFFECT_DRYDOCK_SHIP_REPAIR_COMPLETE
 On %planet%: the %building% completed repairs on the %ship%.
+
+EFFECT_DRYDOCK_SHIP_REPAIR_COMPLETE_MULTI
+On %planet%: the %building% completed repairs on %count% ships.
 
 EFFECT_MONSTER_SPAWNING
 In %system%: A %predefinedshipdesign% was spawned.
@@ -6838,6 +6859,9 @@ Derelict Map
 
 EFFECT_DERELICT_FUEL
 At %system%: ships were refueled from the residual supply found in an abandoned %special%.
+
+EFFECT_DERELICT_FUEL_MULTI
+At %system%: %count% ships were refueled from the residual supply found in an abandoned %special%.
 
 EFFECT_DERELICT_FUEL_LABEL
 Derelict Fuel

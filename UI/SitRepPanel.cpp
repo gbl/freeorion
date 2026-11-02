@@ -15,6 +15,7 @@
 #include <GG/DrawUtil.h>
 #include <GG/Layout.h>
 
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <iterator>
@@ -204,6 +205,66 @@ namespace {
             return GG::RgbaTag(color) + content + "</rgba>";
         }
     };
+    
+    struct sitrep_merge {
+        std::string template_string;
+        std::string allowed_diff_value;
+    };
+    
+    // TODO read this from a config file
+    struct sitrep_merge merge[] = {
+        { "EFFECT_DRYDOCK_SHIP_REPAIR_NONE", "ship"},
+        { "EFFECT_DRYDOCK_SHIP_REPAIR_NOPOP", "ship"},
+        { "EFFECT_DRYDOCK_SHIP_REPAIR_PARTIAL", "ship"},
+        { "EFFECT_DRYDOCK_SHIP_REPAIR_COMPLETE", "ship"},
+        { "SITREP_SHIP_DAMAGED_AT_SYSTEM", "ship" },
+        { "SITREP_SHIP_DESTROYED_AT_SYSTEM", "ship" }, // this would need some sorting to work well, as entries are sorted by log time not by ship type
+        { "SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM", "ship" }, // not sure if this is used
+        { "EFFECT_DERELICT_FUEL", "" },
+    };
+
+    bool MergeVariablesAreEqual(SitRepEntry& s1, SitRepEntry& s2, struct sitrep_merge& merge) {
+        auto tags = s1.GetVariableTags();
+        for (auto tag: tags) {
+            // std::cout << "    " << tag << ": a has " << s1.GetDataString(tag) << ", b has " << s2.GetDataString(tag) << std::endl;
+            if (tag == merge.allowed_diff_value)
+                continue;
+            if (s1.GetDataString(tag) == s2.GetDataString(tag))
+                continue;
+            return false;
+        }
+        return true;
+    }
+    
+    int CountSameSitrepType(std::vector<SitRepEntry>& sitreps, int start, struct sitrep_merge& merge) {
+        size_t possible = start + 1;
+        // std::cout << "trying to merge sitreps " << merge.template_string << std::endl;
+        while (possible < sitreps.size()) {
+            // std::cout << "    compare " << sitreps[start].GetText() << " to " << sitreps[possible].GetText() << std::endl;
+            if (sitreps[possible].GetTemplateString() != merge.template_string)
+                break;
+            if (!MergeVariablesAreEqual(sitreps[start], sitreps[possible], merge))
+                break;
+            possible++;
+        }
+        return possible - start;
+    }
+
+    void MergeDuplicateSitreps(std::vector<SitRepEntry>& sitreps) {
+        for (size_t sr_index=0; sr_index<sitreps.size(); sr_index++) {
+            for (size_t mrg_index = 0; mrg_index < (sizeof (merge) / sizeof (*merge)); mrg_index++) {
+                if (sitreps[sr_index].GetTemplateString() == merge[mrg_index].template_string) {
+                    int same_sitrep_count = CountSameSitrepType(sitreps, sr_index, merge[mrg_index]);
+                    if (same_sitrep_count > 1) {
+                        // std::cout << "found " << same_sitrep_count << " to merge" << std::endl;
+                        sitreps.erase(sitreps.begin()+(sr_index+1), sitreps.begin()+(sr_index+same_sitrep_count));
+                        sitreps[sr_index].SetTemplateString(merge[mrg_index].template_string + "_MULTI", true);
+                        sitreps[sr_index].AddVariable("count", std::to_string(same_sitrep_count));
+                    }
+                }
+            }
+        }
+    }
 
     //////////////////////////////////
     // SitRepLinkText
@@ -829,6 +890,13 @@ void SitRepPanel::Update() {
     // copy remaining unordered sitreps
     for (const SitRepEntry& sitrep : current_turn_sitreps)
     { ordered_sitreps.push_back(sitrep); }
+    
+    // TODO here: merge duplicated sitreps
+    
+    MergeDuplicateSitreps(ordered_sitreps);
+    
+    // TODO here: reorder sitreps to have all that refer to the same 
+    // planet / system in the same place
 
     // create UI rows for all sitrps
     GG::X width = m_sitreps_lb->ClientWidth();
