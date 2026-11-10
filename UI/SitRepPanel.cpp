@@ -210,19 +210,45 @@ namespace {
         std::string template_string;
         std::string allowed_diff_value;
     };
+    std::vector<sitrep_merge> merge;
     
-    // TODO read this from a config file
-    struct sitrep_merge merge[] = {
-        { "EFFECT_DRYDOCK_SHIP_REPAIR_NONE", "ship"},
-        { "EFFECT_DRYDOCK_SHIP_REPAIR_NOPOP", "ship"},
-        { "EFFECT_DRYDOCK_SHIP_REPAIR_PARTIAL", "ship"},
-        { "EFFECT_DRYDOCK_SHIP_REPAIR_COMPLETE", "ship"},
-        { "SITREP_SHIP_DAMAGED_AT_SYSTEM", "ship" },
-        { "SITREP_SHIP_DESTROYED_AT_SYSTEM", "ship" }, // this would need some sorting to work well, as entries are sorted by log time not by ship type
-        { "SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM", "ship" }, // not sure if this is used
-        { "EFFECT_DERELICT_FUEL", "" },
-    };
+    std::vector<sitrep_merge> LoadSitrepMerges() {
+        if (!merge.empty())
+            return merge;
 
+        const std::string& text = UserString("FUNCTIONAL_SITREP_MERGE_CANDIDATES");
+        std::istringstream stream(text);
+        std::string line;
+
+        while (std::getline(stream, line)) {
+            // strip trailing '\r' (Windows line endings)
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+            if (line.empty())
+                continue;
+
+            sitrep_merge entry;
+            const auto first_comma = line.find(',');
+
+            if (first_comma == std::string::npos) {
+                // no comma at all: template only, no allowed diff value
+                entry.template_string = line;
+            } else {
+                entry.template_string = line.substr(0, first_comma);
+
+                // value runs to the next comma (or end of line), so a trailing
+                // comma as in "EFFECT_DRYDOCK_SHIP_REPAIR_NONE,ship," is fine
+                const auto second_comma = line.find(',', first_comma + 1);
+                entry.allowed_diff_value = line.substr(
+                    first_comma + 1,
+                    second_comma == std::string::npos ? std::string::npos
+                                                      : second_comma - first_comma - 1);
+            }
+            merge.push_back(std::move(entry));
+        }
+        return merge;
+    }
+    
     bool MergeVariablesAreEqual(SitRepEntry& s1, SitRepEntry& s2, struct sitrep_merge& merge) {
         auto tags = s1.GetVariableTags();
         for (auto tag: tags) {
@@ -251,8 +277,9 @@ namespace {
     }
 
     void MergeDuplicateSitreps(std::vector<SitRepEntry>& sitreps) {
+        LoadSitrepMerges();
         for (size_t sr_index=0; sr_index<sitreps.size(); sr_index++) {
-            for (size_t mrg_index = 0; mrg_index < (sizeof (merge) / sizeof (*merge)); mrg_index++) {
+            for (size_t mrg_index = 0; mrg_index < merge.size(); mrg_index++) {
                 if (sitreps[sr_index].GetTemplateString() == merge[mrg_index].template_string) {
                     int same_sitrep_count = CountSameSitrepType(sitreps, sr_index, merge[mrg_index]);
                     if (same_sitrep_count > 1) {
