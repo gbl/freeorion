@@ -206,6 +206,45 @@ namespace {
         }
     };
     
+    bool isShipDestroyedSitrep(const std::string& sitrep) {
+        return (sitrep == "SITREP_OWN_SHIP_DESTROYED_AT_SYSTEM"
+        ||      sitrep == "SITREP_SHIP_DESTROYED_AT_SYSTEM"
+        ||      sitrep == "SITREP_OBJECT_DESTROYED_AT_SYSTEM");
+    }
+    
+    void OrderDestroyedShipSitrepsByEmpireAndShiptype(std::vector<SitRepEntry>& sitreps) {
+        for (size_t sr_index=0; sr_index<sitreps.size(); sr_index++) {
+            const std::string& sitrep = sitreps[sr_index].GetTemplateString();
+            if (!isShipDestroyedSitrep(sitrep))
+                continue;
+            const std::string& system = sitreps[sr_index].GetDataString("system");
+            std::cout << "Ordering at " << system << " from " << sr_index << std::endl;
+            size_t sr_end = sr_index + 1;
+            while (sr_end < sitreps.size()) {
+                if (!isShipDestroyedSitrep(sitreps[sr_end].GetTemplateString()))
+                    break;
+                if (system != sitreps[sr_end].GetDataString("system"))
+                    break;
+                sr_end++;
+            }
+            std::cout << "sr_index is now " << sr_index << " and end is " << sr_end << std::endl;
+            size_t same = sr_end - sr_index;
+            std::cout << "Found " << same << " destroyed sitreps at " << system << std::endl;
+            if (same > 1) {
+                std::sort(sitreps.begin() + sr_index, sitreps.begin() + sr_end,
+                    [](const SitRepEntry& a, const SitRepEntry& b) {
+                        if (a.GetTemplateString() != b.GetTemplateString())
+                            return a.GetTemplateString() < b.GetTemplateString();
+                        if (a.GetDataString("empire") != b.GetDataString("empire"))
+                            return a.GetDataString("empire") < b.GetDataString("empire");
+                        return a.GetDataString("shipdesign") < b.GetDataString("shipdesign");
+                    }
+                );
+            }
+            sr_index = sr_end-1;
+        }
+    }
+
     struct sitrep_merge {
         std::string template_string;
         std::string allowed_diff_value;
@@ -916,10 +955,12 @@ void SitRepPanel::Update() {
 
     // copy remaining unordered sitreps
     for (const SitRepEntry& sitrep : current_turn_sitreps)
-    { ordered_sitreps.push_back(sitrep); }
+        { ordered_sitreps.push_back(sitrep); }
     
-    // TODO here: merge duplicated sitreps
-    
+    // order ship destroyed sitreps by empire and ship type name
+    OrderDestroyedShipSitrepsByEmpireAndShiptype(ordered_sitreps);
+
+    // merge duplicated sitreps
     MergeDuplicateSitreps(ordered_sitreps);
     
     // TODO here: reorder sitreps to have all that refer to the same 
