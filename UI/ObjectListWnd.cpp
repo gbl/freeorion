@@ -2195,16 +2195,16 @@ public:
             this->SetSortCol(clicked_column);
             if (old_sort_col == clicked_column) {
                 // if previously descending sorting, switch to normal sort
-                // if previously no sorting, switch to descending sort
+                // if previously no sorting, switch to normal sort
                 // if previously normal sort, switch to descending sort
-                if (old_style & GG::LIST_SORTDESCENDING) {
+                if (old_style & GG::LIST_SORTDESCENDING || old_style & GG::LIST_NOSORT) {
                     this->SetStyle(GG::LIST_NONE);
                 } else {
                     this->SetStyle(GG::LIST_SORTDESCENDING);
                 }
             } else {
-                // no previously sorting set on this column, so default to descending sort
-                this->SetStyle(GG::LIST_SORTDESCENDING);
+                // no previously sorting set on this column, so default to normal sort
+                this->SetStyle(GG::LIST_NONE);
             }
         }
     }
