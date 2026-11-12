@@ -48,19 +48,15 @@ public:
     // all of the following should really be focs.txt defs
     // but I don't know enough how to create them currently.
     bool isTroopShipRecommendedSpecies(const std::string& speciesName);
-    
-    std::string getAttackShipRecommendedSpeciesName();
-    bool isAttackShipRecommendedSpecies(const std::string& speciesName);
-    bool CanProduceColony(std::string species, int planet_id);
     bool IsAttackShipRecommendedPlanetType(std::shared_ptr<Planet> planet);
 
     bool isGoodTroopShipSystem();
     bool isGoodAttackShipSystem();
     bool isAsteroidBeltSystem();
-    bool hasBuildingsForTroopShips();
-    // This one has int, not bool, so we can differentiate between "has all" (2),
+    // These are int, not bool, so we can differentiate between "has all" (2),
     // "could have all if we build one more" (1) which is important if we just
     // researched a tech, and "Doesn't even have shipyard + drydock" (0).
+    int hasBuildingsForTroopShips();
     int hasBuildingsForAttackShips();
 
 private:

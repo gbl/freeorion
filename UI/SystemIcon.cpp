@@ -286,33 +286,6 @@ void FlagBox::addFlag(std::string color) {
     );
 }
 
-bool FlagBox::isTroopShipRecommendedSpecies(const std::string& speciesName) {
-    return (speciesName == "SP_UGMORS" || speciesName == "SP_EGASSEM");
-}
-
-std::string FlagBox::getAttackShipRecommendedSpeciesName() {
-    if (m_empire->BuildingTypeAvailable("BLD_COL_MISIORLA")) { return "SP_MISIORLA"; }
-    if (m_empire->BuildingTypeAvailable("BLD_COL_MUURSH")) { return "SP_MUURSH"; }
-    // add some player only species here that have +X pilots? Which? Eaxaw, and ?
-    if (m_empire->BuildingTypeAvailable("BLD_COL_HHHOH")) { return "SP_HHHOH"; }
-    return "";
-}
-
-bool FlagBox::isAttackShipRecommendedSpecies(const std::string& speciesName) {
-    // Don't use "==...Name()" here so we can return true one more than one
-    if (speciesName == "SP_MISIORLA") { return true; }
-    if (m_empire->BuildingTypeAvailable("BLD_COL_MISIORLA")) { return false; }
-    if (speciesName == "SP_MUURSH") { return true; }
-    // more species here
-    if (m_empire->BuildingTypeAvailable("BLD_COL_MUURSH")
-    ||  m_empire->BuildingTypeAvailable("BLD_COL_MUURSH") /* more here */       )
-        return false;
-
-    if (speciesName == "SP_HHHOH") { return true; }
-
-    return false;
-}
-
 namespace FlagBoxCache {
     int last_updated_turn;
     std::set<std::string> player_has_species;
@@ -343,14 +316,23 @@ namespace FlagBoxCache {
     }
 }
 
+bool FlagBox::isTroopShipRecommendedSpecies(const std::string& speciesName) {
+    if (FlagBoxCache::player_has_species.count("SP_EGASSEM")) {
+        return (speciesName == "SP_EGASSEM");
+    }
+    return (speciesName == "SP_UGMORS");
+}
+
 /**
  * Return true iff the system has a planet that's inhabited by ugmors
  * or egassem, has an energy compressor, or has a drydock on a planet
  * that can't build an energy compressor (because it's not a blue/white
  * star or energy compressor hasn't been researched yet)
  */
-bool FlagBox::hasBuildingsForTroopShips() {
+int FlagBox::hasBuildingsForTroopShips() {
     std::shared_ptr<System> system = GetSystem(m_system_id);
+    FlagBoxCache::update_player_available_races(m_empire);
+    int best_in_this_system = 0;
     auto planetids = system->PlanetIDs();
     for (int planetid: planetids) {
         auto planet = GetPlanet(planetid);
@@ -362,17 +344,17 @@ bool FlagBox::hasBuildingsForTroopShips() {
         for (int buildingid: buildingids) {
             auto building = GetBuilding(buildingid);
             if (building->BuildingTypeName() == "BLD_SHIPYARD_ENRG_COMP")
-                return true;
+                return 2;
             if (system->GetStarType() != STAR_BLUE 
             &&  system->GetStarType() != STAR_WHITE
                     && building->BuildingTypeName() == "BLD_SHIPYARD_ORBITAL_DRYDOCK")
-                return true;
+                return 2;
             if (m_empire->ResearchedTechs().count("SHP_FRC_ENRG_COMP") == 0
                     && building->BuildingTypeName() == "BLD_SHIPYARD_ORBITAL_DRYDOCK")
-                return true;
+                best_in_this_system = 1;
         }
     }
-    return false;
+    return best_in_this_system;
 }
 
 bool FlagBox::isGoodTroopShipSystem() {
@@ -382,11 +364,10 @@ bool FlagBox::isGoodTroopShipSystem() {
         auto planet = GetPlanet(planetid);
         if (!planet)
             continue;
-        if (planet->Type() != PT_INFERNO)
-            continue;
-        if (m_empire->ResearchedTechs().count("SHP_FRC_ENRG_COMP") == 0)
+        const std::string& species = planet->SpeciesName();
+        if (isTroopShipRecommendedSpecies(species))
             return true;
-        else if (system->GetStarType() == STAR_BLUE || system->GetStarType() == STAR_WHITE)
+        if (planet->Type() == PT_INFERNO && species.empty())
             return true;
     }
     return false;
@@ -505,7 +486,9 @@ void FlagBox::CompleteConstruction() {
     if ((!system) || system->Name().empty())
         return;
 
-    if (hasBuildingsForTroopShips())    { addFlag("red"); }
+    int hbfts = hasBuildingsForTroopShips();
+    if (hbfts == 2)                     { addFlag("red"); }
+    else if (hbfts == 1)                { addFlag("mediumred"); }
     else if (isGoodTroopShipSystem())   { addFlag("lightred"); }
     
     int hbfas = hasBuildingsForAttackShips();
