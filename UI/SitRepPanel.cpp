@@ -218,7 +218,7 @@ namespace {
             if (!isShipDestroyedSitrep(sitrep))
                 continue;
             const std::string& system = sitreps[sr_index].GetDataString("system");
-            std::cout << "Ordering at " << system << " from " << sr_index << std::endl;
+            // std::cout << "Ordering at " << system << " from " << sr_index << std::endl;
             size_t sr_end = sr_index + 1;
             while (sr_end < sitreps.size()) {
                 if (!isShipDestroyedSitrep(sitreps[sr_end].GetTemplateString()))
@@ -227,9 +227,9 @@ namespace {
                     break;
                 sr_end++;
             }
-            std::cout << "sr_index is now " << sr_index << " and end is " << sr_end << std::endl;
+            // std::cout << "sr_index is now " << sr_index << " and end is " << sr_end << std::endl;
             size_t same = sr_end - sr_index;
-            std::cout << "Found " << same << " destroyed sitreps at " << system << std::endl;
+            // std::cout << "Found " << same << " destroyed sitreps at " << system << std::endl;
             if (same > 1) {
                 std::sort(sitreps.begin() + sr_index, sitreps.begin() + sr_end,
                     [](const SitRepEntry& a, const SitRepEntry& b) {
