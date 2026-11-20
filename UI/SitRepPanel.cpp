@@ -331,6 +331,32 @@ namespace {
             }
         }
     }
+    
+    void MergeSameSystemSitreps(std::vector<SitRepEntry>& sitreps) {
+        std::vector<SitRepEntry> new_sitreps;
+        new_sitreps.reserve(sitreps.size());
+        for (size_t sr_index = 0; sr_index < sitreps.size(); sr_index++) {
+            const std::string& templ = UserString(sitreps[sr_index].GetTemplateString());
+            if (templ.find("%system%") == std::string::npos) {
+                new_sitreps.push_back(sitreps[sr_index]);
+                continue;
+            }
+            std::string curr_system = sitreps[sr_index].GetDataString("system");
+            new_sitreps.push_back(sitreps[sr_index]);
+            for (size_t next = sr_index+1; next < sitreps.size(); next++) {
+                SitRepEntry& nextrep = sitreps.at(next);
+                if (UserString(nextrep.GetTemplateString()).find("%system%") != std::string::npos
+                &&  curr_system == nextrep.GetDataString("system")) {
+                    new_sitreps.push_back(nextrep);
+                    sitreps.erase(sitreps.begin() + next);
+                    next--;
+                }
+            }
+        }
+        
+        sitreps.clear();
+        sitreps.assign(new_sitreps.begin(), new_sitreps.end());
+    }
 
     //////////////////////////////////
     // SitRepLinkText
@@ -965,6 +991,7 @@ void SitRepPanel::Update() {
     
     // TODO here: reorder sitreps to have all that refer to the same 
     // planet / system in the same place
+    MergeSameSystemSitreps(ordered_sitreps);
 
     // create UI rows for all sitrps
     GG::X width = m_sitreps_lb->ClientWidth();
