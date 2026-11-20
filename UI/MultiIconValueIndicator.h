@@ -15,8 +15,10 @@ class MultiIconValueIndicator : public GG::Wnd {
 public:
     /** Initializes with no icons shown. */
     MultiIconValueIndicator(GG::X w);
+    MultiIconValueIndicator(GG::X w, int system_id);
     MultiIconValueIndicator(GG::X w, int object_id, const std::vector<std::pair<MeterType, MeterType>>& meter_types);
-    MultiIconValueIndicator(GG::X w, const std::vector<int>& object_ids, const std::vector<std::pair<MeterType, MeterType>>& meter_types);
+    MultiIconValueIndicator(GG::X w, int system_id, int object_id, const std::vector<std::pair<MeterType, MeterType>>& meter_types);
+    MultiIconValueIndicator(GG::X w, int system_id, const std::vector<int>& object_ids, const std::vector<std::pair<MeterType, MeterType>>& meter_types);
 
     void CompleteConstruction() override;
 
@@ -31,6 +33,7 @@ public:
 
 private:
     std::vector<std::shared_ptr<StatisticIcon>>         m_icons;
+    int                                                 m_system_id;
     const std::vector<std::pair<MeterType, MeterType>>  m_meter_types;
     std::vector<int>                                    m_object_ids;
 };

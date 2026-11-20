@@ -3280,7 +3280,8 @@ void SidePanel::RefreshImpl() {
     // refresh the system resource summary.
     m_system_resource_summary = GG::Wnd::Create<MultiIconValueIndicator>(
         Width() - MaxPlanetDiameter() - 8,
-        all_planets_share_owner ? all_planets : player_planets,
+        s_system_id,
+        all_planets_share_owner || player_planets.empty() ? planet_ids_vec : player_planets,
         meter_types);
     m_system_resource_summary->MoveTo(GG::Pt(GG::X(MaxPlanetDiameter() + 4),
                                              140 - m_system_resource_summary->Height()));
